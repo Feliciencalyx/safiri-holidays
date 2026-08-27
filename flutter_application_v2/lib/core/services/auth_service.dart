@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'supabase_service.dart';
 
 class AuthUser {
   final String id;
@@ -69,10 +70,7 @@ class AuthResponse {
 }
 
 class AuthService {
-  static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:5000/api/auth';
-    return 'http://10.0.2.2:5000/api/auth'; // Android emulator alias for localhost
-  }
+  static String get baseUrl => '${SupabaseProductionConfig.apiBaseUrl}/auth';
 
   /// Login with credentials (returns JWT token and user profile)
   static Future<AuthResponse> login({

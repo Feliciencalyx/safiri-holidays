@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'supabase_service.dart';
 
 class DuffelFareTier {
   final String name;
@@ -116,10 +117,7 @@ class DuffelFlightOffer {
 class DuffelApiService {
   static const String webBaseDomain = 'https://flights.safiriholidays.com';
 
-  static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:5000/api/flights';
-    return 'http://10.0.2.2:5000/api/flights';
-  }
+  static String get baseUrl => '${SupabaseProductionConfig.apiBaseUrl}/flights';
 
   /// Construct protocol URL matching flights.safiriholidays.com exactly
   static String buildSafiriHolidaysWebUrl({
