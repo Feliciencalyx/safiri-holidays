@@ -5,6 +5,68 @@ const { Duffel } = require('@duffel/api');
 const duffelToken = process.env.DUFFEL_API_TOKEN || 'duffel_test_token';
 const duffel = new Duffel({ token: duffelToken });
 
+// GET /api/flights/airports (Worldwide Airport Autocomplete)
+router.get('/airports', async (req, res, next) => {
+  const query = (req.query.q || '').trim();
+
+  try {
+    if (query.length >= 2) {
+      const placesResponse = await duffel.places.suggestions({ query });
+      if (placesResponse.data && placesResponse.data.length > 0) {
+        const airports = placesResponse.data.map((p) => ({
+          code: p.iata_code || p.id,
+          name: p.name,
+          city: p.city_name || p.name,
+          country: p.country_name || 'Global',
+        }));
+
+        return res.status(200).json({
+          success: true,
+          count: airports.length,
+          airports,
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('[DUFFEL PLACES WARNING]', err.message);
+  }
+
+  // Worldwide Fallback Airports
+  const comprehensive = [
+    { code: 'KGL', name: 'Kigali International Airport', city: 'Kigali', country: 'Rwanda' },
+    { code: 'KME', name: 'Kamembe International Airport', city: 'Cyangugu', country: 'Rwanda' },
+    { code: 'NBO', name: 'Jomo Kenyatta International', city: 'Nairobi', country: 'Kenya' },
+    { code: 'DXB', name: 'Dubai International', city: 'Dubai', country: 'United Arab Emirates' },
+    { code: 'LHR', name: 'London Heathrow', city: 'London', country: 'United Kingdom' },
+    { code: 'JFK', name: 'John F. Kennedy International', city: 'New York', country: 'United States' },
+    { code: 'CDG', name: 'Paris Charles de Gaulle', city: 'Paris', country: 'France' },
+    { code: 'EBB', name: 'Entebbe International Airport', city: 'Entebbe', country: 'Uganda' },
+    { code: 'DAR', name: 'Julius Nyerere International', city: 'Dar es Salaam', country: 'Tanzania' },
+    { code: 'ADD', name: 'Addis Ababa Bole International', city: 'Addis Ababa', country: 'Ethiopia' },
+    { code: 'DEL', name: 'Indira Gandhi International', city: 'Delhi', country: 'India' },
+    { code: 'BOM', name: 'Chhatrapati Shivaji Maharaj Intl', city: 'Mumbai', country: 'India' },
+    { code: 'BJM', name: 'Melchior Ndadaye International', city: 'Bujumbura', country: 'Burundi' },
+    { code: 'GOM', name: 'Goma International Airport', city: 'Goma', country: 'DR Congo' },
+  ];
+
+  const qLower = query.toLowerCase();
+  const filtered = !query
+    ? comprehensive
+    : comprehensive.filter(
+        (a) =>
+          a.code.toLowerCase().includes(qLower) ||
+          a.name.toLowerCase().includes(qLower) ||
+          a.city.toLowerCase().includes(qLower) ||
+          a.country.toLowerCase().includes(qLower)
+      );
+
+  res.status(200).json({
+    success: true,
+    count: filtered.length,
+    airports: filtered,
+  });
+});
+
 // POST /api/flights/search
 router.post('/search', async (req, res, next) => {
   const { originCode, destinationCode, departureDate, cabinClass, passengers } = req.body;
