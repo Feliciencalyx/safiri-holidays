@@ -45,9 +45,9 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`====================================================`);
-  console.log(`✈️  Safiri Backend Online on http://localhost:${PORT}`);
+  console.log(`✈️  Safiri Backend Online on port ${PORT}`);
   console.log(`🌐  Target Domain: https://api.safiriholidays.com`);
   console.log(`====================================================`);
 });
