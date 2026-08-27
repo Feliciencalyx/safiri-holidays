@@ -288,6 +288,23 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  String _getCleanUserErrorMessage(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('socketexception') || lower.contains('clientexception') || lower.contains('connection refused') || lower.contains('errno = 111')) {
+      return 'Unable to connect to Safiri servers. Please check your internet connection.';
+    }
+    if (lower.contains('cannot read properties') || lower.contains('undefined') || lower.contains('typeerror') || lower.contains('null')) {
+      return 'Incorrect email or password. Please try again.';
+    }
+    if (lower.contains('invalid login credentials') || lower.contains('invalid credentials') || lower.contains('unauthorized')) {
+      return 'Incorrect email or password. Please check your details and try again.';
+    }
+    if (lower.contains('email') && lower.contains('already')) {
+      return 'An account with this email address already exists. Please sign in.';
+    }
+    return raw.isEmpty ? 'Sign in failed. Please check your credentials.' : raw;
+  }
+
   Future<void> _performLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -366,7 +383,7 @@ class _LoginScreenState extends State<LoginScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(response.message.isNotEmpty ? response.message : 'Invalid credentials or account not registered.'),
+                content: Text(_getCleanUserErrorMessage(response.message)),
                 backgroundColor: AppColors.error,
               ),
             );
@@ -386,7 +403,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Authentication Error: ${e.toString()}'),
+              content: Text(_getCleanUserErrorMessage(e.toString())),
               backgroundColor: AppColors.error,
             ),
           );

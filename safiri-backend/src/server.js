@@ -41,7 +41,7 @@ app.use((err, req, res, next) => {
   console.error('[SAFIRI BACKEND ERROR]', err);
   res.status(err.status || 500).json({
     success: false,
-    message: err.message || 'Internal Server Error',
+    message: 'Unable to process your request right now. Please try again or contact support.',
   });
 });
 

@@ -466,14 +466,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(res.message), backgroundColor: AppColors.error),
+            SnackBar(content: Text(_getCleanUserErrorMessage(res.message)), backgroundColor: AppColors.error),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Registration Error: $e'), backgroundColor: AppColors.error),
+          SnackBar(content: Text(_getCleanUserErrorMessage(e.toString())), backgroundColor: AppColors.error),
         );
       }
     } finally {
@@ -481,6 +481,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  String _getCleanUserErrorMessage(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('socketexception') || lower.contains('clientexception') || lower.contains('connection refused') || lower.contains('errno = 111')) {
+      return 'Unable to connect to Safiri servers. Please check your internet connection.';
+    }
+    if (lower.contains('cannot read properties') || lower.contains('undefined') || lower.contains('typeerror') || lower.contains('null')) {
+      return 'Registration failed. Please check your details and try again.';
+    }
+    if (lower.contains('email') && (lower.contains('already') || lower.contains('exists') || lower.contains('taken'))) {
+      return 'An account with this email address already exists. Please sign in.';
+    }
+    return raw.isEmpty ? 'Account creation failed. Please try again.' : raw;
   }
 
   void _showCountryPicker() {

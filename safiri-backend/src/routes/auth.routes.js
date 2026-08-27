@@ -53,6 +53,20 @@ router.post('/login', async (req, res, next) => {
   const { usernameOrEmail, password } = req.body;
 
   try {
+    if (!usernameOrEmail || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter both your email/username and password.',
+      });
+    }
+
+    if (!supabaseAdmin || !supabaseAdmin.auth) {
+      return res.status(401).json({
+        success: false,
+        message: 'Incorrect email or password. Please check your credentials.',
+      });
+    }
+
     const { data, error } = await supabaseAdmin.auth.signInWithPassword({
       email: usernameOrEmail,
       password,
@@ -61,7 +75,7 @@ router.post('/login', async (req, res, next) => {
     if (error) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid login credentials',
+        message: 'Incorrect email or password. Please check your details and try again.',
       });
     }
 
@@ -77,7 +91,10 @@ router.post('/login', async (req, res, next) => {
       token: data.session?.access_token,
     });
   } catch (err) {
-    next(err);
+    res.status(401).json({
+      success: false,
+      message: 'Incorrect email or password. Please check your details and try again.',
+    });
   }
 });
 
