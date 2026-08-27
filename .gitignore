@@ -1,0 +1,18 @@
+# Node.js
+node_modules/
+.env
+.env.production
+npm-debug.log*
+
+# Flutter / Dart
+.dart_tool/
+.fvm/
+.idea/
+.vscode/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+android/.gradle
+ios/Pods/
+ios/Runner.xcworkspace

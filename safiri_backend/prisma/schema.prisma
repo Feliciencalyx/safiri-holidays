@@ -1,0 +1,134 @@
+// Prisma Schema for Safiri Holidays (Supabase PostgreSQL Integration)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String           @id @default(uuid())
+  name         String
+  email        String           @unique
+  username     String           @unique
+  passwordHash String
+  role         String           @default("customer")
+  phone        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  bookings         Booking[]
+  payments         Payment[]
+  enquiries        HolidayEnquiry[]
+  visaApplications VisaApplication[]
+}
+
+model Booking {
+  id              String    @id
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  offerId         String
+  airline         String?
+  flightNumber    String?
+  originCode      String
+  destinationCode String
+  departureTime   String?
+  arrivalTime     String?
+  totalAmount     Float     @default(0.0)
+  currency        String    @default("RWF")
+  status          String    @default("CONFIRMED")
+  passengerName   String
+  passportNumber  String?
+  nationality     String?
+  email           String?
+  qrCodeData      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  payments        Payment[]
+}
+
+model Payment {
+  id                     String   @id @default(uuid())
+  reference              String   @unique
+  bookingId              String?
+  booking                Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  userId                 String?
+  user                   User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  provider               String
+  paymentMethod          String
+  amount                 Float
+  currency               String   @default("RWF")
+  customerName           String
+  email                  String?
+  phone                  String?
+  status                 String   @default("pending")
+  referenceId            String?
+  transactionId          String?
+  financialTransactionId String?
+  checkoutUrl            String?
+  invoiceNumber          String?
+  message                String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model HolidayEnquiry {
+  id           String   @id @default(uuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  holidayTitle String
+  customerName String
+  email        String
+  phone        String?
+  travelDate   String?
+  numTravelers Int?     @default(1)
+  notes        String?
+  status       String   @default("NEW")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model VisaApplication {
+  id                   String   @id
+  userId               String?
+  user                 User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  destinationCountry   String
+  applicantNationality String
+  residenceCountry     String   @default("Rwanda")
+  travelPurpose        String   @default("Tourism")
+  currentStep          Int      @default(1)
+  status               String   @default("Under Review")
+  documentsUploaded    Json?
+  submittedDate        DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model Airport {
+  id            Int      @id @default(autoincrement())
+  openFlightsId Int?     @unique
+  name          String
+  city          String
+  country       String
+  iata          String?
+  icao          String?
+  latitude      Float?
+  longitude     Float?
+  altitude      Float?
+  timezone      Float?
+  dst           String?
+  tzDb          String?
+  type          String   @default("airport")
+  source        String   @default("OpenFlights")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([iata])
+  @@index([name])
+  @@index([city])
+  @@index([country])
+}

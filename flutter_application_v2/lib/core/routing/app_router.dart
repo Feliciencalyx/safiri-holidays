@@ -1,0 +1,47 @@
+import 'package:flutter/material.dart';
+import '../../features/auth/presentation/screens/splash_screen.dart';
+import '../../features/auth/presentation/screens/onboarding_screen.dart';
+import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../screens/main_navigation_screen.dart';
+import '../../screens/flights/flight_search_screen.dart';
+import '../../features/visas/presentation/screens/visa_route_check_screen.dart';
+import '../../features/holidays/presentation/screens/holiday_enquiry_screen.dart';
+import '../../features/notifications/presentation/screens/notification_center_screen.dart';
+import '../../features/admin/presentation/screens/admin_dashboard_screen.dart';
+
+class AppRouter {
+  static const String splash = '/';
+  static const String onboarding = '/onboarding';
+  static const String login = '/login';
+  static const String home = '/home';
+  static const String flights = '/flights';
+  static const String visas = '/visas';
+  static const String holidays = '/holidays';
+  static const String notifications = '/notifications';
+  static const String admin = '/admin';
+
+  static Route<dynamic> generateRoute(RouteSettings settings) {
+    switch (settings.name) {
+      case splash:
+        return MaterialPageRoute(builder: (_) => const SplashScreen());
+      case onboarding:
+        return MaterialPageRoute(builder: (_) => const OnboardingScreen());
+      case login:
+        return MaterialPageRoute(builder: (_) => const LoginScreen());
+      case home:
+        return MaterialPageRoute(builder: (_) => const MainNavigationScreen());
+      case flights:
+        return MaterialPageRoute(builder: (_) => const FlightSearchScreen());
+      case visas:
+        return MaterialPageRoute(builder: (_) => const VisaRouteCheckScreen());
+      case holidays:
+        return MaterialPageRoute(builder: (_) => const HolidayEnquiryScreen());
+      case notifications:
+        return MaterialPageRoute(builder: (_) => const NotificationCenterScreen());
+      case admin:
+        return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
+      default:
+        return MaterialPageRoute(builder: (_) => const SplashScreen());
+    }
+  }
+}
