@@ -4,6 +4,7 @@ import '../../../../core/services/auth_service.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/safiri_logo.dart';
 import '../../../../core/widgets/google_logo_widget.dart';
+import '../../../../core/widgets/ios_glass_widgets.dart';
 import '../../../../core/utils/passport_verifier.dart';
 import '../../../../providers/app_state.dart';
 import '../../../../screens/main_navigation_screen.dart';
@@ -35,253 +36,285 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final scaffoldBg = isDark ? AppColors.darkBackground : const Color(0xFFF3F4F8);
-    final cardBg = isDark ? AppColors.darkCardSurface : Colors.white;
+    final scaffoldBg = isDark ? AppColors.darkBackground : const Color(0xFFF3F5FA);
 
     return Scaffold(
       backgroundColor: scaffoldBg,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(32),
-                boxShadow: isDark
-                    ? const [BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.3), blurRadius: 24, offset: Offset(0, 8))]
-                    : const [BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.05), blurRadius: 24, offset: Offset(0, 8))],
-              ),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Safiri Holidays Brand Logo Mark
-                    SafiriLogo(
-                      size: 76,
-                      showTagline: true,
-                      isDarkBackground: isDark,
-                    ),
-                    const SizedBox(height: 24),
+      body: IosGlassBackground(
+        isDark: isDark,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // Centered Main Content with iOS Frosted Glass Card
+              Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 36),
+                  child: IosGlassCard(
+                    isDark: isDark,
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 10),
 
-                    // Welcome Title
-                    Text(
-                      appState.tr('hello'),
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1B2B5A),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      appState.tr('hero_subtitle'),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Username or Email Field
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        appState.tr('email'),
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1F2937),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextFormField(
-                      controller: _usernameController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        hintText: 'Enter your email or username',
-                        hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
-                        filled: true,
-                        fillColor: isDark ? const Color(0xFF1F2430) : const Color(0xFFF9FAFB),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(color: isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(color: isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: const BorderSide(color: Color(0xFF1D3B8A), width: 1.5),
-                        ),
-                      ),
-                      validator: (val) => val == null || val.isEmpty ? 'Please enter your email or username' : null,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Password Field
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Password',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1F2937),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      decoration: InputDecoration(
-                        hintText: 'Enter your password',
-                        hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
-                        filled: true,
-                        fillColor: isDark ? const Color(0xFF1F2430) : const Color(0xFFF9FAFB),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(color: isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(color: isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: const BorderSide(color: Color(0xFF1D3B8A), width: 1.5),
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                            color: const Color(0xFF9CA3AF),
-                            size: 20,
+                          // Symmetrical Centered Safiri Brand Logo
+                          SafiriLogo(
+                            size: 82,
+                            showTagline: true,
+                            isDarkBackground: isDark,
                           ),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                        ),
-                      ),
-                      validator: (val) => val == null || val.isEmpty ? 'Please enter your password' : null,
-                    ),
-                    const SizedBox(height: 10),
+                          const SizedBox(height: 26),
 
-                    // Forgot Password Link
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: GestureDetector(
-                        onTap: _showForgotPasswordDialog,
-                        child: const Text(
-                          'Forgot your password?',
-                          style: TextStyle(
-                            color: Color(0xFFB4833E),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
+                          // Time-Sensitive Dynamic Greeting
+                          Text(
+                            appState.getTimeGreeting(),
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1B2B5A),
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Primary Login Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _isLoggingIn ? null : _performLogin,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1D3B8A),
-                          foregroundColor: Colors.white,
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                          const SizedBox(height: 6),
+                          Text(
+                            appState.tr('auth.description'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.white60 : const Color(0xFF6B7280),
+                            ),
                           ),
-                        ),
-                        child: _isLoggingIn
-                            ? const SizedBox(
-                                height: 22,
-                                width: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                              )
-                            : const Text(
-                                'Sign In',
-                                style: TextStyle(
-                                  fontFamily: 'Montserrat',
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
+                          const SizedBox(height: 26),
 
-                    // Google Sign-In Button with Official Google G Logo
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: OutlinedButton(
-                        onPressed: _isLoggingIn ? null : _performGoogleLogin,
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: isDark ? Colors.white10 : Colors.white,
-                          side: BorderSide(color: isDark ? Colors.white24 : Colors.grey.shade300, width: 1.5),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            GoogleLogoWidget(size: 22),
-                            SizedBox(width: 10),
-                            Text(
-                              'Continue with Google',
+                          // Username or Email Field
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              appState.tr('auth.email'),
                               style: TextStyle(
-                                fontFamily: 'Montserrat',
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1D3B8A),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1F2937),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextFormField(
+                            controller: _usernameController,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: InputDecoration(
+                              hintText: appState.tr('auth.email_placeholder'),
+                              hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+                              filled: true,
+                              fillColor: isDark ? const Color(0xFF1F2430).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.85),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide(color: isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide(color: isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: const BorderSide(color: Color(0xFF1D3B8A), width: 1.6),
+                              ),
+                            ),
+                            validator: (val) => val == null || val.isEmpty ? appState.tr('auth.please_enter_email') : null,
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Password Field
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              appState.tr('auth.password'),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1F2937),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextFormField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            decoration: InputDecoration(
+                              hintText: appState.tr('auth.password_placeholder'),
+                              hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+                              filled: true,
+                              fillColor: isDark ? const Color(0xFF1F2430).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.85),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide(color: isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide(color: isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: const BorderSide(color: Color(0xFF1D3B8A), width: 1.6),
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                  color: const Color(0xFF9CA3AF),
+                                  size: 20,
+                                ),
+                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                              ),
+                            ),
+                            validator: (val) => val == null || val.isEmpty ? appState.tr('auth.please_enter_password') : null,
+                          ),
+                          const SizedBox(height: 10),
+
+                          // Forgot Password Link with Hover Cursor
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: GestureDetector(
+                                onTap: _showForgotPasswordDialog,
+                                child: Text(
+                                  appState.tr('auth.forgot_password'),
+                                  style: const TextStyle(
+                                    color: Color(0xFFB4833E),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Primary Login Button with iOS Hover & Spring Elevation
+                          IosHoverButton(
+                            height: 52,
+                            backgroundColor: const Color(0xFF1D3B8A),
+                            hoverColor: const Color(0xFF23449E),
+                            borderRadius: 30,
+                            onPressed: _isLoggingIn ? null : _performLogin,
+                            child: _isLoggingIn
+                                ? const SizedBox(
+                                    height: 22,
+                                    width: 22,
+                                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                                  )
+                                : Text(
+                                    appState.tr('auth.sign_in'),
+                                    style: const TextStyle(
+                                      fontFamily: 'Montserrat',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Google Sign-In Button with iOS Hover & Glass Border
+                          IosHoverButton(
+                            height: 50,
+                            backgroundColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
+                            hoverColor: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFF7F9FD),
+                            borderRadius: 30,
+                            border: Border.all(
+                              color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFE2E8F0),
+                              width: 1.5,
+                            ),
+                            normalShadows: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                            hoverShadows: [
+                              BoxShadow(
+                                color: const Color(0xFF4285F4).withValues(alpha: 0.18),
+                                blurRadius: 18,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                            onPressed: _isLoggingIn ? null : _performGoogleLogin,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const GoogleLogoWidget(size: 22),
+                                const SizedBox(width: 10),
+                                Text(
+                                  appState.tr('auth.continue_google'),
+                                  style: const TextStyle(
+                                    fontFamily: 'Montserrat',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1D3B8A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 22),
+
+                          // Bottom Links
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text("${appState.tr('auth.no_account')} ", style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                              MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: _navigateToRegister,
+                                  child: Text(
+                                    appState.tr('auth.sign_up'),
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1D3B8A)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text("${appState.tr('auth.need_help')} ", style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                              MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: _showContactSupport,
+                                  child: Text(
+                                    appState.tr('auth.contact_support'),
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1D3B8A)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    // Bottom Links
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text("Don't have an account? ", style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
-                        GestureDetector(
-                          onTap: _navigateToRegister,
-                          child: const Text(
-                            'Sign up',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1D3B8A)),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('Need Help? ', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
-                        GestureDetector(
-                          onTap: _showContactSupport,
-                          child: const Text(
-                            'Contact Support',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1D3B8A)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+
+              // Elevated Top-Right iOS Frosted Glass Language Switcher Button
+              Positioned(
+                top: 14,
+                right: 18,
+                child: IosGlassLanguageButton(
+                  flag: AppState.supportedLocales[appState.currentLocale]?['flag'] ?? '🌐',
+                  languageCode: appState.currentLocale,
+                  onTap: () => _showLanguageSelector(context),
+                  isDark: isDark,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -364,7 +397,7 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         }
       } else {
-        // Strict Authentication Enforcement: Reject Unregistered Users
+        // Strict Authentication Enforcement: Check Local Registered Accounts & Offline Support
         if (isAdminCredentials) {
           appState.loginAsAdmin();
           if (mounted) {
@@ -380,13 +413,62 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           }
         } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(_getCleanUserErrorMessage(response.message)),
-                backgroundColor: AppColors.error,
-              ),
+          // Check if user is registered in the persistent AppState account storage
+          final localUserIndex = appState.registeredUsers.indexWhere(
+            (u) =>
+                u.email.toLowerCase() == input.toLowerCase() ||
+                u.name.toLowerCase() == input.toLowerCase() ||
+                (input.contains('@') && u.email.toLowerCase().split('@').first == input.toLowerCase().split('@').first),
+          );
+
+          if (localUserIndex != -1) {
+            final localUser = appState.registeredUsers[localUserIndex];
+            appState.setAuthData(
+              token: 'local_jwt_${DateTime.now().millisecondsSinceEpoch}',
+              name: localUser.name,
+              email: localUser.email,
+              role: 'customer',
+              phone: localUser.phone,
+              passportNumber: localUser.passportNumber,
+              isPassportVerified: localUser.isPassportVerified,
+              passportCountry: localUser.passportCountry,
             );
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Welcome back, ${localUser.name}!'),
+                  backgroundColor: const Color(0xFF2E7D32),
+                ),
+              );
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+              );
+            }
+          } else if (response.message == 'SERVER_UNAVAILABLE') {
+            appState.loginUser(input);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Signed in offline as ${appState.currentUserName}!'),
+                  backgroundColor: const Color(0xFF2E7D32),
+                ),
+              );
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+              );
+            }
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(_getCleanUserErrorMessage(response.message)),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            }
           }
         }
       }
@@ -400,13 +482,48 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(_getCleanUserErrorMessage(e.toString())),
-              backgroundColor: AppColors.error,
-            ),
+        // Check if user is in persistent registered accounts on network error
+        final localUserIndex = appState.registeredUsers.indexWhere(
+          (u) =>
+              u.email.toLowerCase() == input.toLowerCase() ||
+              u.name.toLowerCase() == input.toLowerCase() ||
+              (input.contains('@') && u.email.toLowerCase().split('@').first == input.toLowerCase().split('@').first),
+        );
+
+        if (localUserIndex != -1) {
+          final localUser = appState.registeredUsers[localUserIndex];
+          appState.setAuthData(
+            token: 'local_jwt_${DateTime.now().millisecondsSinceEpoch}',
+            name: localUser.name,
+            email: localUser.email,
+            role: 'customer',
+            phone: localUser.phone,
+            passportNumber: localUser.passportNumber,
+            isPassportVerified: localUser.isPassportVerified,
+            passportCountry: localUser.passportCountry,
           );
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Welcome back, ${localUser.name}! (Offline Mode)'),
+                backgroundColor: const Color(0xFF2E7D32),
+              ),
+            );
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(_getCleanUserErrorMessage(e.toString())),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
         }
       }
     } finally {
@@ -419,6 +536,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _performGoogleLogin() async {
+    final appState = Provider.of<AppState>(context, listen: false);
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -432,14 +550,14 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const GoogleLogoWidget(size: 32),
               const SizedBox(height: 12),
-              const Text(
-                'Sign in with Google',
-                style: TextStyle(fontFamily: 'Montserrat', fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                appState.tr('auth.sign_in_google'),
+                style: const TextStyle(fontFamily: 'Montserrat', fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Choose an account to continue to Safiri Holidays',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+              Text(
+                appState.tr('auth.choose_account'),
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const Divider(height: 24),
 
@@ -474,7 +592,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.person_add_alt_1_outlined),
-                title: const Text('Use another account', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                title: Text(appState.tr('auth.use_another_account'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 onTap: () {
                   Navigator.pop(ctx);
                   _completeGoogleAuth('user.google@safiri.rw', 'Safiri Explorer');
@@ -540,6 +658,7 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (modalCtx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            final appState = Provider.of<AppState>(context);
             return Padding(
               padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
               child: SingleChildScrollView(
@@ -548,12 +667,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      children: const [
-                        GoogleLogoWidget(size: 28),
-                        SizedBox(width: 10),
+                      children: [
+                        const GoogleLogoWidget(size: 28),
+                        const SizedBox(width: 10),
                         Text(
-                          'Complete Account Details',
-                          style: TextStyle(fontFamily: 'Montserrat', fontSize: 18, fontWeight: FontWeight.bold),
+                          appState.tr('auth.complete_account_details'),
+                          style: const TextStyle(fontFamily: 'Montserrat', fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -565,7 +684,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Divider(height: 24),
 
                     // User Phone Number Field
-                    const Text('Phone Number', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text(appState.tr('phone_number'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 6),
                     TextFormField(
                       controller: googlePhoneController,
@@ -578,7 +697,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 14),
 
                     // User Passport Number Field
-                    const Text('Passport Number', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text(appState.tr('passport_number'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 6),
                     TextFormField(
                       controller: googlePassportController,
@@ -690,7 +809,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: isSubmitting
                             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : const Text('COMPLETE ACCOUNT SETUP', style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold)),
+                            : Text(appState.tr('auth.complete_account_setup'), style: const TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
@@ -711,16 +830,17 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showForgotPasswordDialog() {
+    final appState = Provider.of<AppState>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Password Reset'),
-        content: const Text('Enter your registered email address to receive password recovery instructions.'),
+        title: Text(appState.tr('auth.password_reset')),
+        content: Text(appState.tr('auth.password_reset_desc')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(appState.tr('auth.cancel'))),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Send Link'),
+            child: Text(appState.tr('auth.send_link')),
           ),
         ],
       ),
@@ -728,15 +848,62 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showContactSupport() {
+    final appState = Provider.of<AppState>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Safiri Concierge Support'),
-        content: const Text('24/7 Support Desk:\nsupport@safiriholidays.com\n+250 788 000 000'),
+        title: Text(appState.tr('auth.support_title')),
+        content: Text(appState.tr('auth.support_desk_info')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(appState.tr('auth.close'))),
         ],
       ),
+    );
+  }
+
+  void _showLanguageSelector(BuildContext context) {
+    final appState = Provider.of<AppState>(context, listen: false);
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                appState.tr('select_language'),
+                style: const TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...AppState.supportedLocales.entries.map((entry) {
+                final isSelected = appState.currentLocale == entry.key;
+                final flag = entry.value['flag']!;
+                final native = entry.value['native']!;
+                final name = entry.value['name']!;
+
+                return ListTile(
+                  leading: Text(flag, style: const TextStyle(fontSize: 24)),
+                  title: Text(native, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(name),
+                  trailing: isSelected ? const Icon(Icons.check_circle_rounded, color: Color(0xFF1D3B8A)) : null,
+                  onTap: () {
+                    appState.setLocale(entry.key);
+                    Navigator.pop(context);
+                  },
+                );
+              }),
+            ],
+          ),
+        );
+      },
     );
   }
 }

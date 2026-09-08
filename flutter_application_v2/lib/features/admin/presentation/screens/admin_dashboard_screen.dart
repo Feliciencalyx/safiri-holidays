@@ -158,7 +158,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${appState.formatPrice(31050.72)} (42,850,000 RWF)',
+                    appState.formatPrice(appState.bookings.fold<double>(0.0, (sum, b) => sum + b.priceUsd)),
                     style: const TextStyle(
                       fontFamily: 'Montserrat',
                       fontSize: 22,

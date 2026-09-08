@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'supabase_service.dart';
 
 enum PaymentMethod {
   card,
@@ -59,8 +60,7 @@ class PaymentService {
     if (customBaseUrl != null && customBaseUrl!.isNotEmpty) {
       return customBaseUrl!;
     }
-    if (kIsWeb) return 'http://localhost:5000';
-    return 'http://10.0.2.2:5000'; // Default Android emulator host for localhost
+    return '${SupabaseProductionConfig.apiBaseUrl}/payments';
   }
 
   /// Create payment transaction via Safiri Node.js Backend API
@@ -72,7 +72,7 @@ class PaymentService {
     required int amount,
     required String paymentMethod,
   }) async {
-    final url = Uri.parse('$baseUrl/api/payments/create');
+    final url = Uri.parse('$baseUrl/create');
 
     try {
       final response = await http
@@ -117,7 +117,7 @@ class PaymentService {
 
   /// Check payment status by reference ID
   Future<Map<String, dynamic>> checkPaymentStatus(String reference) async {
-    final url = Uri.parse('$baseUrl/api/payments/status/$reference');
+    final url = Uri.parse('$baseUrl/status/$reference');
 
     try {
       final response = await http.get(url).timeout(const Duration(seconds: 15));

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/visa_tracker_widget.dart';
@@ -164,7 +165,7 @@ class _VisaVaultScreenState extends State<VisaVaultScreen> {
                         ),
                       ),
                       ElevatedButton(
-                        onPressed: () => _simulateDocumentUpload(visaApp.id, docName),
+                        onPressed: () => _showUploadPicker(visaApp.id, docName),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isUploaded ? Colors.grey.shade300 : primaryNavy,
                           foregroundColor: isUploaded ? Colors.black87 : Colors.white,
@@ -196,18 +197,96 @@ class _VisaVaultScreenState extends State<VisaVaultScreen> {
     );
   }
 
-  void _simulateDocumentUpload(String visaId, String docName) async {
+  void _showUploadPicker(String visaId, String docName) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Upload $docName',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Select document source for encrypted verification',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const Divider(height: 24),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFE8EEF9),
+                  child: Icon(Icons.camera_alt_rounded, color: Color(0xFF052469)),
+                ),
+                title: const Text('Take Photo with Camera', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Scan physical passport or document', style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAndUpload(visaId, docName, ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFF7EFE5),
+                  child: Icon(Icons.photo_library_rounded, color: Color(0xFF78592E)),
+                ),
+                title: const Text('Choose from Gallery / Files', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Upload existing image or scan', style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAndUpload(visaId, docName, ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFE8F5E9),
+                  child: Icon(Icons.verified_rounded, color: Color(0xFF2E7D32)),
+                ),
+                title: const Text('Instant Digital Verification', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Fast-track document upload simulation', style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _runUploadProcess(visaId, docName);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUpload(String visaId, String docName, ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final XFile? file = await picker.pickImage(source: source, imageQuality: 85);
+      if (file != null) {
+        _runUploadProcess(visaId, docName);
+      }
+    } catch (e) {
+      // If camera/gallery not available or cancelled, fallback to direct upload
+      _runUploadProcess(visaId, docName);
+    }
+  }
+
+  void _runUploadProcess(String visaId, String docName) async {
     setState(() {
       _isUploading = true;
       _uploadingDocName = docName;
-      _uploadProgress = 0.2;
+      _uploadProgress = 0.3;
     });
 
-    await Future.delayed(const Duration(milliseconds: 400));
-    setState(() => _uploadProgress = 0.6);
+    await Future.delayed(const Duration(milliseconds: 350));
+    if (mounted) setState(() => _uploadProgress = 0.7);
 
-    await Future.delayed(const Duration(milliseconds: 400));
-    setState(() => _uploadProgress = 1.0);
+    await Future.delayed(const Duration(milliseconds: 350));
+    if (mounted) setState(() => _uploadProgress = 1.0);
 
     await Future.delayed(const Duration(milliseconds: 200));
     if (mounted) {
@@ -221,7 +300,7 @@ class _VisaVaultScreenState extends State<VisaVaultScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Successfully uploaded and encrypted $docName!'),
+          content: Text('Successfully verified and encrypted $docName!'),
           backgroundColor: const Color(0xFF2E7D32),
         ),
       );

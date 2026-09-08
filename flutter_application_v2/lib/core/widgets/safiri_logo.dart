@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/app_state.dart';
 
 class SafiriLogo extends StatelessWidget {
   final double size;
@@ -8,6 +10,7 @@ class SafiriLogo extends StatelessWidget {
   final Color? textColor;
   final Color? goldColor;
   final bool isDarkBackground;
+  final String? customTagline;
 
   const SafiriLogo({
     super.key,
@@ -18,12 +21,23 @@ class SafiriLogo extends StatelessWidget {
     this.textColor,
     this.goldColor,
     this.isDarkBackground = false,
+    this.customTagline,
   });
 
   @override
   Widget build(BuildContext context) {
     final effectiveNavy = textColor ?? (isDarkBackground ? Colors.white : const Color(0xFF0B2545));
     final effectiveGold = goldColor ?? (isDarkBackground ? const Color(0xFFE5A968) : const Color(0xFFC5902B));
+
+    String resolvedTagline = customTagline ?? '';
+    if (resolvedTagline.isEmpty && showTagline) {
+      try {
+        final appState = Provider.of<AppState>(context);
+        resolvedTagline = appState.tr('tagline').toUpperCase();
+      } catch (_) {
+        resolvedTagline = 'DEFINING A LEGACY OF EXCEPTIONAL TRAVEL';
+      }
+    }
 
     final markWidget = SizedBox(
       width: size,
@@ -79,7 +93,7 @@ class SafiriLogo extends StatelessWidget {
               if (showTagline) ...[
                 const SizedBox(height: 2),
                 Text(
-                  'DEFINING A LEGACY OF EXCEPTIONAL TRAVEL',
+                  resolvedTagline,
                   style: TextStyle(
                     fontSize: size * 0.08,
                     fontWeight: FontWeight.bold,
@@ -132,7 +146,7 @@ class SafiriLogo extends StatelessWidget {
         if (showTagline) ...[
           SizedBox(height: size * 0.08),
           Text(
-            'DEFINING A LEGACY OF EXCEPTIONAL TRAVEL',
+            resolvedTagline,
             style: TextStyle(
               fontSize: size * 0.09,
               fontWeight: FontWeight.bold,

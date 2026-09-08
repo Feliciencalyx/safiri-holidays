@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Flutter Application V2</string>
+	<string>Safiri Holidays</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,11 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>flutter_application_v2</string>
+	<string>Safiri Holidays</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Safiri Holidays requires camera access to capture passport scans and profile avatars.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Safiri Holidays requires photo library access to upload passport documents and select profile avatars.</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

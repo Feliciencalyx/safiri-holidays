@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/boarding_pass_widget.dart';
+import '../../features/notifications/presentation/screens/notification_center_screen.dart';
+import '../../core/services/notification_service.dart';
 
 class BookingsScreen extends StatefulWidget {
   const BookingsScreen({super.key});
@@ -32,6 +34,8 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryNavy = isDark ? MajesticHorizonTheme.darkPrimaryNavy : MajesticHorizonTheme.lightPrimaryNavy;
 
+    final notificationService = Provider.of<NotificationService>(context);
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -52,10 +56,38 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
                       color: primaryNavy,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.notifications_none_rounded),
-                    onPressed: () {},
-                    tooltip: 'Notifications',
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications_none_rounded),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const NotificationCenterScreen()),
+                          );
+                        },
+                        tooltip: 'Notifications',
+                      ),
+                      if (notificationService.unreadCount > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFD32F2F),
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                            child: Text(
+                              '${notificationService.unreadCount}',
+                              style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),

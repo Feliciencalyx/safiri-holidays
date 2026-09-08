@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/widgets/safiri_logo.dart';
 import '../../core/widgets/user_profile_modal.dart';
+import '../../core/widgets/ios_glass_widgets.dart';
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../flights/flight_search_screen.dart';
@@ -11,6 +12,8 @@ import '../hotels/hotel_enquiry_screen.dart';
 import '../hotels/hotel_search_results_screen.dart';
 import '../holidays/holidays_list_screen.dart';
 import '../bus/bus_booking_screen.dart';
+import '../../features/notifications/presentation/screens/notification_center_screen.dart';
+import '../../core/services/notification_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -18,6 +21,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+    final notificationService = Provider.of<NotificationService>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryNavy = isDark ? MajesticHorizonTheme.darkPrimaryNavy : MajesticHorizonTheme.lightPrimaryNavy;
     final accentGold = isDark ? MajesticHorizonTheme.darkAccentGold : MajesticHorizonTheme.lightAccentGold;
@@ -88,6 +92,40 @@ class HomeScreen extends StatelessWidget {
                       ),
                       tooltip: 'Toggle Light/Dark Theme',
                     ),
+                    // Notification Center Bell
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const NotificationCenterScreen()),
+                            );
+                          },
+                          icon: const Icon(Icons.notifications_none_rounded, size: 24),
+                          tooltip: 'Notifications',
+                        ),
+                        if (notificationService.unreadCount > 0)
+                          Positioned(
+                            right: 6,
+                            top: 6,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFD32F2F),
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                              child: Text(
+                                '${notificationService.unreadCount}',
+                                style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                     const SizedBox(width: 4),
                     // User Avatar with System-wide Profile Modal
                     InkWell(
@@ -121,7 +159,7 @@ class HomeScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Hello,',
+                      '${appState.getTimeGreeting()},',
                       style: TextStyle(
                         fontSize: 16,
                         color: textMuted,
@@ -160,7 +198,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'PRIMARY SERVICES',
+                          appState.tr('primary_services').toUpperCase(),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -175,7 +213,7 @@ class HomeScreen extends StatelessWidget {
                     // 1. Flight Bookings Card
                     _buildPrimaryActionCard(
                       context: context,
-                      title: 'Flight Bookings',
+                      title: appState.tr('flight_bookings'),
                       subtitle: 'Global Carrier Search & Dynamic E-Ticket Boarding Pass',
                       icon: Icons.flight_takeoff_rounded,
                       badgeText: 'Safiri Verified Fares',
@@ -194,7 +232,7 @@ class HomeScreen extends StatelessWidget {
                     // 2. Holiday Packages Card (safiriholidays.com Top Packages)
                     _buildPrimaryActionCard(
                       context: context,
-                      title: 'Holiday Packages',
+                      title: appState.tr('holiday_packages'),
                       subtitle: 'Goa, Kerala, Dubai, Bali, Thailand, Europe & Mauritius',
                       icon: Icons.card_travel_rounded,
                       badgeText: 'Curated Itineraries',
@@ -213,7 +251,7 @@ class HomeScreen extends StatelessWidget {
                     // 3. Hotel Bookings & Stays
                     _buildPrimaryActionCard(
                       context: context,
-                      title: 'Hotels & Resorts',
+                      title: appState.tr('hotels_holidays'),
                       subtitle: 'Over 30,000 Luxury rooms & budget stay deals worldwide',
                       icon: Icons.hotel_rounded,
                       badgeText: 'Free Cancellation',
@@ -582,7 +620,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Build Primary Action Card Widget
+  // Build Primary Action Card Widget with iOS Hover Animation
   Widget _buildPrimaryActionCard({
     required BuildContext context,
     required String title,
@@ -592,19 +630,26 @@ class HomeScreen extends StatelessWidget {
     required List<Color> gradientColors,
     required VoidCallback onTap,
   }) {
-    return InkWell(
+    return IosHoverCard(
       onTap: onTap,
-      borderRadius: MajesticHorizonTheme.radiusCard,
+      borderRadius: 16,
+      padding: EdgeInsets.zero,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          borderRadius: MajesticHorizonTheme.radiusCard,
+          borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
             colors: gradientColors,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          boxShadow: MajesticHorizonTheme.lightCardShadow,
+          boxShadow: [
+            BoxShadow(
+              color: gradientColors.first.withValues(alpha: 0.28),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Row(
           children: [

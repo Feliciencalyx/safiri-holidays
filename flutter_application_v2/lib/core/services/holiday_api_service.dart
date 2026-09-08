@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'supabase_service.dart';
 
 class HolidayPackageModel {
   final String id;
@@ -72,10 +73,7 @@ class ServerStatusModel {
 class HolidayApiService {
   static const String serverDomain = 'safiriholidays.com';
 
-  static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:5000/api/holidays';
-    return 'http://10.0.2.2:5000/api/holidays';
-  }
+  static String get baseUrl => '${SupabaseProductionConfig.apiBaseUrl}/holidays';
 
   /// Check live server status for safiriholidays.com
   static Future<ServerStatusModel> fetchServerStatus() async {

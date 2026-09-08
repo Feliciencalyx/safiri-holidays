@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/localization/app_translations.dart';
 import '../core/services/currency_api_service.dart';
 import '../core/utils/passport_verifier.dart';
@@ -31,6 +33,36 @@ class FlightDetails {
     required this.cabinClass,
     required this.seatNumber,
   });
+
+  factory FlightDetails.fromJson(Map<String, dynamic> json) => FlightDetails(
+        origin: json['origin'] ?? '',
+        originCode: json['originCode'] ?? '',
+        destination: json['destination'] ?? '',
+        destinationCode: json['destinationCode'] ?? '',
+        airline: json['airline'] ?? '',
+        airlineLogo: json['airlineLogo'] ?? '',
+        departureTime: json['departureTime'] ?? '',
+        arrivalTime: json['arrivalTime'] ?? '',
+        duration: json['duration'] ?? '',
+        stops: json['stops'] ?? '',
+        cabinClass: json['cabinClass'] ?? '',
+        seatNumber: json['seatNumber'] ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'origin': origin,
+        'originCode': originCode,
+        'destination': destination,
+        'destinationCode': destinationCode,
+        'airline': airline,
+        'airlineLogo': airlineLogo,
+        'departureTime': departureTime,
+        'arrivalTime': arrivalTime,
+        'duration': duration,
+        'stops': stops,
+        'cabinClass': cabinClass,
+        'seatNumber': seatNumber,
+      };
 }
 
 class BookingItem {
@@ -57,6 +89,32 @@ class BookingItem {
     required this.qrCodeData,
     this.flightDetails,
   });
+
+  factory BookingItem.fromJson(Map<String, dynamic> json) => BookingItem(
+        id: json['id'] ?? '',
+        title: json['title'] ?? '',
+        userName: json['userName'] ?? '',
+        userTier: json['userTier'] ?? '',
+        status: json['status'] ?? 'Active',
+        type: json['type'] ?? 'Flight',
+        dateRange: json['dateRange'] ?? '',
+        priceUsd: (json['priceUsd'] as num?)?.toDouble() ?? 0.0,
+        qrCodeData: json['qrCodeData'] ?? '',
+        flightDetails: json['flightDetails'] != null ? FlightDetails.fromJson(json['flightDetails']) : null,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'userName': userName,
+        'userTier': userTier,
+        'status': status,
+        'type': type,
+        'dateRange': dateRange,
+        'priceUsd': priceUsd,
+        'qrCodeData': qrCodeData,
+        'flightDetails': flightDetails?.toJson(),
+      };
 }
 
 class VisaApplicationItem {
@@ -77,6 +135,28 @@ class VisaApplicationItem {
     required this.documentsUploaded,
     required this.submittedDate,
   });
+
+  factory VisaApplicationItem.fromJson(Map<String, dynamic> json) => VisaApplicationItem(
+        id: json['id'] ?? '',
+        destinationCountry: json['destinationCountry'] ?? '',
+        applicantNationality: json['applicantNationality'] ?? '',
+        currentStep: json['currentStep'] ?? 1,
+        status: json['status'] ?? 'Under Review',
+        documentsUploaded: json['documentsUploaded'] is Map
+            ? Map<String, bool>.from((json['documentsUploaded'] as Map).map((k, v) => MapEntry(k.toString(), v == true)))
+            : {},
+        submittedDate: json['submittedDate'] ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'destinationCountry': destinationCountry,
+        'applicantNationality': applicantNationality,
+        'currentStep': currentStep,
+        'status': status,
+        'documentsUploaded': documentsUploaded,
+        'submittedDate': submittedDate,
+      };
 }
 
 class HotelEnquiryItem {
@@ -325,6 +405,7 @@ class AppState extends ChangeNotifier {
   void updateUserAvatarUrl(String newUrl) {
     _currentUserAvatarUrl = newUrl;
     notifyListeners();
+    _savePreferences();
   }
 
   void deleteUserAccount() {
@@ -420,6 +501,7 @@ class AppState extends ChangeNotifier {
       );
     }
     notifyListeners();
+    _savePreferences();
   }
 
   void updateUserProfile({
@@ -442,6 +524,7 @@ class AppState extends ChangeNotifier {
     if (isPassportVerified != null) _isPassportVerified = isPassportVerified;
     if (passportCountry != null) _passportCountry = passportCountry;
     notifyListeners();
+    _savePreferences();
   }
 
   void logout() {
@@ -454,6 +537,7 @@ class AppState extends ChangeNotifier {
     _currentUserPassportNumber = '';
     _isPassportVerified = false;
     notifyListeners();
+    _savePreferences();
   }
 
   void loginUser(String input) {
@@ -465,6 +549,7 @@ class AppState extends ChangeNotifier {
       _isPassportVerified = true;
       _currentUserTier = 'Premium Explorer';
       notifyListeners();
+      _savePreferences();
       return;
     }
 
@@ -520,6 +605,7 @@ class AppState extends ChangeNotifier {
       );
     }
     notifyListeners();
+    _savePreferences();
   }
 
   // Theme Engine
@@ -529,11 +615,13 @@ class AppState extends ChangeNotifier {
   void toggleTheme() {
     _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
     notifyListeners();
+    _savePreferences();
   }
 
   void setThemeMode(ThemeMode mode) {
     _themeMode = mode;
     notifyListeners();
+    _savePreferences();
   }
 
   // Multi-Currency Engine
@@ -555,6 +643,79 @@ class AppState extends ChangeNotifier {
 
   AppState() {
     refreshLiveExchangeRates();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final theme = prefs.getString('safiri_theme');
+      if (theme != null) {
+        _themeMode = theme == 'dark' ? ThemeMode.dark : ThemeMode.light;
+      }
+      final currency = prefs.getString('safiri_currency');
+      if (currency != null && currencyData.containsKey(currency)) {
+        _currentCurrency = currency;
+      }
+      final locale = prefs.getString('safiri_locale');
+      if (locale != null && supportedLocales.containsKey(locale)) {
+        _currentLocale = locale;
+      }
+      final token = prefs.getString('safiri_auth_token');
+      if (token != null && token.isNotEmpty) {
+        _authToken = token;
+        _currentUserName = prefs.getString('safiri_user_name') ?? _currentUserName;
+        _currentUserEmail = prefs.getString('safiri_user_email') ?? _currentUserEmail;
+        _currentUserPhone = prefs.getString('safiri_user_phone') ?? _currentUserPhone;
+        _currentUserPassportNumber = prefs.getString('safiri_user_passport') ?? _currentUserPassportNumber;
+        _passportCountry = prefs.getString('safiri_user_country') ?? _passportCountry;
+        _isPassportVerified = prefs.getBool('safiri_user_verified') ?? _isPassportVerified;
+        _currentUserTier = prefs.getString('safiri_user_tier') ?? _currentUserTier;
+        _userRole = prefs.getString('safiri_user_role') ?? _userRole;
+        _isAdmin = _userRole == 'admin';
+        _currentUserAvatarUrl = prefs.getString('safiri_user_avatar') ?? _currentUserAvatarUrl;
+      }
+      final savedBookings = prefs.getString('safiri_saved_bookings');
+      if (savedBookings != null && savedBookings.isNotEmpty) {
+        final List decoded = jsonDecode(savedBookings);
+        for (var item in decoded) {
+          final b = BookingItem.fromJson(item);
+          if (!_bookings.any((existing) => existing.id == b.id)) {
+            _bookings.insert(0, b);
+          }
+        }
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[AppState] Error loading SharedPreferences: $e');
+    }
+  }
+
+  Future<void> _savePreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('safiri_theme', _themeMode == ThemeMode.dark ? 'dark' : 'light');
+      await prefs.setString('safiri_currency', _currentCurrency);
+      await prefs.setString('safiri_locale', _currentLocale);
+      if (_authToken != null && _authToken!.isNotEmpty) {
+        await prefs.setString('safiri_auth_token', _authToken!);
+        await prefs.setString('safiri_user_name', _currentUserName);
+        await prefs.setString('safiri_user_email', _currentUserEmail);
+        await prefs.setString('safiri_user_phone', _currentUserPhone);
+        await prefs.setString('safiri_user_passport', _currentUserPassportNumber);
+        await prefs.setString('safiri_user_country', _passportCountry);
+        await prefs.setBool('safiri_user_verified', _isPassportVerified);
+        await prefs.setString('safiri_user_tier', _currentUserTier);
+        await prefs.setString('safiri_user_role', _userRole);
+        await prefs.setString('safiri_user_avatar', _currentUserAvatarUrl);
+      } else {
+        await prefs.remove('safiri_auth_token');
+      }
+      final encodedBookings = jsonEncode(_bookings.map((b) => b.toJson()).toList());
+      await prefs.setString('safiri_saved_bookings', encodedBookings);
+    } catch (e) {
+      debugPrint('[AppState] Error saving SharedPreferences: $e');
+    }
   }
 
   Future<void> refreshLiveExchangeRates() async {
@@ -582,6 +743,7 @@ class AppState extends ChangeNotifier {
     if (currencyData.containsKey(currencyCode)) {
       _currentCurrency = currencyCode;
       notifyListeners();
+      _savePreferences();
     }
   }
 
@@ -618,10 +780,26 @@ class AppState extends ChangeNotifier {
     return AppTranslations.get(key, _currentLocale);
   }
 
+  /// Returns time-sensitive greeting based on the user's local hour:
+  /// 05:00 - 11:59: Good Morning / Bonjour / Mwaramutse
+  /// 12:00 - 16:59: Good Afternoon / Bon Après-midi / Mwiriwe
+  /// 17:00 - 04:59: Good Evening / Bonsoir / Mwiriwe Neza
+  String getTimeGreeting({DateTime? overrideTime}) {
+    final hour = (overrideTime ?? DateTime.now()).hour;
+    if (hour >= 5 && hour < 12) {
+      return tr('greeting_morning');
+    } else if (hour >= 12 && hour < 17) {
+      return tr('greeting_afternoon');
+    } else {
+      return tr('greeting_evening');
+    }
+  }
+
   void setLocale(String localeCode) {
     if (supportedLocales.containsKey(localeCode)) {
       _currentLocale = localeCode;
       notifyListeners();
+      _savePreferences();
     }
   }
 
@@ -708,6 +886,7 @@ class AppState extends ChangeNotifier {
   void addBooking(BookingItem booking) {
     _bookings.insert(0, booking);
     notifyListeners();
+    _savePreferences();
   }
 
   void updateBookingStatus(String bookingId, String newStatus) {
@@ -727,6 +906,7 @@ class AppState extends ChangeNotifier {
         flightDetails: old.flightDetails,
       );
       notifyListeners();
+      _savePreferences();
     }
   }
 

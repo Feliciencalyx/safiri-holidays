@@ -1,15 +1,9 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'supabase_service.dart';
 
 class CurrencyApiService {
-  static String get _baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:5000/api';
-    } else {
-      return 'http://10.0.2.2:5000/api';
-    }
-  }
+  static String get _baseUrl => SupabaseProductionConfig.apiBaseUrl;
 
   /// Fetches live exchange rates relative to USD.
   /// Falls back to direct public Forex API if backend server is unreachable.

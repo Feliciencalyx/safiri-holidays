@@ -72,7 +72,11 @@ class PassportVerifierService {
     int confidenceScore = 92;
 
     // Rwanda Passport
-    if (cleanInput.startsWith('PC') || cleanInput.startsWith('RWA') || (selectedNationality != null && selectedNationality.toLowerCase().contains('rwand'))) {
+    if (cleanInput.startsWith('PC') ||
+        cleanInput.startsWith('PD') ||
+        cleanInput.startsWith('PS') ||
+        cleanInput.startsWith('RWA') ||
+        (selectedNationality != null && selectedNationality.toLowerCase().contains('rwand'))) {
       countryName = 'Republic of Rwanda';
       countryCode = 'RWA';
       confidenceScore = 99;

@@ -4,6 +4,7 @@ import '../../../../core/services/auth_service.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/safiri_logo.dart';
 import '../../../../core/widgets/google_logo_widget.dart';
+import '../../../../core/widgets/ios_glass_widgets.dart';
 import '../../../../core/utils/passport_verifier.dart';
 import '../../../../providers/app_state.dart';
 import '../../../../screens/main_navigation_screen.dart';
@@ -542,257 +543,357 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  void _showLanguageSelector(BuildContext context) {
+    final appState = Provider.of<AppState>(context, listen: false);
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                appState.tr('select_language'),
+                style: const TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...AppState.supportedLocales.entries.map((entry) {
+                final isSelected = appState.currentLocale == entry.key;
+                final flag = entry.value['flag']!;
+                final native = entry.value['native']!;
+                final name = entry.value['name']!;
+
+                return ListTile(
+                  leading: Text(flag, style: const TextStyle(fontSize: 24)),
+                  title: Text(native, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(name),
+                  trailing: isSelected ? const Icon(Icons.check_circle_rounded, color: Color(0xFF1D3B8A)) : null,
+                  onTap: () {
+                  appState.setLocale(entry.key);
+                    Navigator.pop(context);
+                  },
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final scaffoldBg = isDark ? AppColors.darkBackground : const Color(0xFFF3F4F8);
-    final cardBg = isDark ? AppColors.darkCardSurface : Colors.white;
+    final scaffoldBg = isDark ? AppColors.darkBackground : const Color(0xFFF3F5FA);
 
     return Scaffold(
       backgroundColor: scaffoldBg,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(32),
-                boxShadow: isDark
-                    ? const [BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.3), blurRadius: 24, offset: Offset(0, 8))]
-                    : const [BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.05), blurRadius: 24, offset: Offset(0, 8))],
-              ),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Safiri Brand Mark
-                    SafiriLogo(size: 70, showTagline: true, isDarkBackground: isDark),
-                    const SizedBox(height: 20),
+      body: IosGlassBackground(
+        isDark: isDark,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 36),
+                  child: IosGlassCard(
+                    isDark: isDark,
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 10),
 
-                    const Text(
-                      'Create Your Account',
-                      style: TextStyle(fontFamily: 'Montserrat', fontSize: 24, fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Join Safiri Holidays for exclusive flights, visas, and holiday packages.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 24),
+                          // Symmetrical Centered Safiri Brand Mark
+                          SafiriLogo(size: 76, showTagline: true, isDarkBackground: isDark),
+                          const SizedBox(height: 24),
 
-                    // GOOGLE SIGN-UP BUTTON
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: OutlinedButton(
-                        onPressed: _isLoading ? null : _handleGoogleSignUp,
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: isDark ? Colors.white10 : Colors.white,
-                          side: BorderSide(color: isDark ? Colors.white24 : Colors.grey.shade300, width: 1.5),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            GoogleLogoWidget(size: 22),
-                            SizedBox(width: 10),
-                            Text(
-                              'Create Account with Google',
-                              style: TextStyle(
-                                fontFamily: 'Montserrat',
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1D3B8A),
-                              ),
+                          Text(
+                            appState.tr('auth.create_account'),
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1B2B5A),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            appState.tr('auth.join_safiri'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.grey),
+                          ),
+                          const SizedBox(height: 24),
 
-                    // Divider
-                    Row(
-                      children: const [
-                        Expanded(child: Divider()),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 12),
-                          child: Text('OR REGISTER WITH EMAIL', style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
-                        ),
-                        Expanded(child: Divider()),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Name Field
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Full Name',
-                        hintText: 'John Doe',
-                        prefixIcon: Icon(Icons.person_outline_rounded),
-                      ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Please enter your full name' : null,
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Email Field with Strict Format Validation
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email Address',
-                        hintText: 'john@example.com',
-                        prefixIcon: Icon(Icons.email_outlined),
-                      ),
-                      validator: _validateEmail,
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Phone Field with Country Code Picker & Validation
-                    TextFormField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        labelText: 'Phone Number',
-                        hintText: _selectedCountry.expectedLength == 9 ? '788000123' : '5550199',
-                        prefixIcon: InkWell(
-                          onTap: _showCountryPicker,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          // GOOGLE SIGN-UP BUTTON with iOS Hover
+                          IosHoverButton(
+                            height: 50,
+                            backgroundColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
+                            hoverColor: isDark ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFF7F9FD),
+                            borderRadius: 30,
+                            border: Border.all(
+                              color: isDark ? Colors.white.withValues(alpha: 0.20) : const Color(0xFFE2E8F0),
+                              width: 1.5,
+                            ),
+                            normalShadows: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                            hoverShadows: [
+                              BoxShadow(
+                                color: const Color(0xFF4285F4).withValues(alpha: 0.18),
+                                blurRadius: 18,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                            onPressed: _isLoading ? null : _handleGoogleSignUp,
                             child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(_selectedCountry.flag, style: const TextStyle(fontSize: 18)),
-                                const SizedBox(width: 4),
-                                Text(_selectedCountry.code, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                const Icon(Icons.arrow_drop_down, size: 18, color: Colors.grey),
-                                const SizedBox(width: 6),
-                                Container(width: 1, height: 20, color: Colors.grey.shade400),
+                                const GoogleLogoWidget(size: 22),
+                                const SizedBox(width: 10),
+                                Text(
+                                  appState.tr('auth.create_account_google'),
+                                  style: const TextStyle(
+                                    fontFamily: 'Montserrat',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1D3B8A),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                        ),
-                      ),
-                      validator: _validatePhone,
-                    ),
-                    const SizedBox(height: 14),
+                          const SizedBox(height: 20),
 
-                    // Passport Number Field with Automatic Verifier Badge
-                    TextFormField(
-                      controller: _passportController,
-                      textCapitalization: TextCapitalization.characters,
-                      decoration: InputDecoration(
-                        labelText: 'Passport Number',
-                        hintText: 'e.g. PC1234567 or AK098234',
-                        prefixIcon: const Icon(Icons.badge_outlined),
-                        suffixIcon: _passportResult != null
-                            ? Icon(
-                                _passportResult!.isValid ? Icons.verified_user : Icons.error_outline,
-                                color: _passportResult!.isValid ? Colors.green : Colors.red,
-                              )
-                            : null,
-                      ),
-                      onChanged: (val) {
-                        setState(() {
-                          _passportResult = PassportVerifierService.verify(val, selectedNationality: _selectedCountry.name);
-                        });
-                      },
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Please enter your passport number';
-                        final res = PassportVerifierService.verify(v, selectedNationality: _selectedCountry.name);
-                        if (!res.isValid) return res.errorMessage ?? 'Invalid passport number';
-                        return null;
-                      },
-                    ),
-                    if (_passportResult != null) ...[
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _passportResult!.isValid ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: _passportResult!.isValid ? Colors.green : Colors.red),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(_passportResult!.isValid ? Icons.check_circle : Icons.warning_amber_rounded, size: 16, color: _passportResult!.isValid ? Colors.green : Colors.red),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                _passportResult!.isValid
-                                    ? '${_passportResult!.verificationBadgeText} • ${_passportResult!.passportType}'
-                                    : (_passportResult!.errorMessage ?? 'Invalid Passport Number'),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: _passportResult!.isValid ? Colors.green.shade800 : Colors.red.shade800,
+                          // Divider
+                          Row(
+                            children: [
+                              const Expanded(child: Divider()),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                child: Text(appState.tr('auth.or_register_email'), style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
+                              ),
+                              const Expanded(child: Divider()),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Name Field
+                          TextFormField(
+                            controller: _nameController,
+                            decoration: InputDecoration(
+                              labelText: appState.tr('full_name'),
+                              hintText: 'John Doe',
+                              prefixIcon: const Icon(Icons.person_outline_rounded),
+                            ),
+                            validator: (v) => v == null || v.trim().isEmpty ? 'Please enter your full name' : null,
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Email Field with Strict Format Validation
+                          TextFormField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: InputDecoration(
+                              labelText: appState.tr('email_address'),
+                              hintText: 'name@example.com',
+                              prefixIcon: const Icon(Icons.email_outlined),
+                            ),
+                            validator: _validateEmail,
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Phone Number Field with Country Code Picker
+                          TextFormField(
+                            controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: InputDecoration(
+                              labelText: appState.tr('phone_number'),
+                              hintText: '0780 000 000',
+                              prefixIcon: InkWell(
+                                onTap: _showCountryPicker,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(_selectedCountry.flag, style: const TextStyle(fontSize: 18)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        _selectedCountry.code,
+                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1D3B8A)),
+                                      ),
+                                      const Icon(Icons.arrow_drop_down, size: 18, color: Colors.grey),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 14),
-
-                    // Password Field with Min-Length & Pattern Validation
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        hintText: 'Min 8 chars (letters & numbers)',
-                        prefixIcon: const Icon(Icons.lock_outline_rounded),
-                        suffixIcon: IconButton(
-                          icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                        ),
-                      ),
-                      validator: _validatePassword,
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Standard CTA Submit Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _handleStandardRegister,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1D3B8A),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : const Text('CREATE ACCOUNT', style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Login Navigation Link
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('Already have an account? ', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: const Text(
-                            'Sign In',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1D3B8A)),
+                            validator: _validatePhone,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 14),
+
+                          // Passport Number Field with Instant Verification Feedback
+                          TextFormField(
+                            controller: _passportController,
+                            textCapitalization: TextCapitalization.characters,
+                            onChanged: (val) {
+                              setState(() {
+                                _passportResult = PassportVerifierService.verify(
+                                  val,
+                                  selectedNationality: _selectedCountry.name,
+                                );
+                              });
+                            },
+                            decoration: InputDecoration(
+                              labelText: appState.tr('passport_number'),
+                              hintText: 'e.g. PC9920148X or A12345678',
+                              prefixIcon: const Icon(Icons.badge_outlined),
+                              suffixIcon: _passportResult == null || _passportController.text.isEmpty
+                                  ? null
+                                  : Icon(
+                                      _passportResult!.isValid ? Icons.verified_rounded : Icons.info_outline_rounded,
+                                      color: _passportResult!.isValid ? const Color(0xFF2E7D32) : Colors.orange,
+                                    ),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Please enter your passport number';
+                              }
+                              final res = PassportVerifierService.verify(v.trim(), selectedNationality: _selectedCountry.name);
+                              if (!res.isValid) {
+                                return res.errorMessage ?? 'Invalid passport number format';
+                              }
+                              return null;
+                            },
+                          ),
+
+                          // Live Passport Validation Card
+                          if (_passportResult != null && _passportController.text.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: _passportResult!.isValid ? const Color(0xFFE8F5E9) : const Color(0xFFFFF3E0),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: _passportResult!.isValid ? const Color(0xFF81C784) : const Color(0xFFFFB74D),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _passportResult!.isValid ? Icons.check_circle : Icons.warning_amber_rounded,
+                                      size: 16,
+                                      color: _passportResult!.isValid ? const Color(0xFF2E7D32) : Colors.orange.shade800,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        _passportResult!.isValid
+                                            ? 'Verified: ${_passportResult!.countryName} (${_passportResult!.passportType})'
+                                            : (_passportResult!.errorMessage ?? 'Passport verification in progress...'),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: _passportResult!.isValid ? const Color(0xFF2E7D32) : Colors.orange.shade900,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 14),
+
+                          // Password Field with Visibility Toggle
+                          TextFormField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            decoration: InputDecoration(
+                              labelText: appState.tr('auth.password'),
+                              hintText: 'Min 8 chars (letters & numbers)',
+                              prefixIcon: const Icon(Icons.lock_outline_rounded),
+                              suffixIcon: IconButton(
+                                icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                              ),
+                            ),
+                            validator: _validatePassword,
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Standard CTA Submit Button with iOS Hover
+                          IosHoverButton(
+                            height: 52,
+                            backgroundColor: const Color(0xFF1D3B8A),
+                            hoverColor: const Color(0xFF23449E),
+                            borderRadius: 30,
+                            onPressed: _isLoading ? null : _handleStandardRegister,
+                            child: _isLoading
+                                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : Text(
+                                    appState.tr('auth.create_account').toUpperCase(),
+                                    style: const TextStyle(
+                                      fontFamily: 'Montserrat',
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Login Navigation Link
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text("${appState.tr('auth.already_have_account')} ", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                              MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: () => Navigator.pop(context),
+                                  child: Text(
+                                    appState.tr('auth.sign_in'),
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1D3B8A)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+
+              // Elevated Top-Right iOS Frosted Glass Language Switcher Button
+              Positioned(
+                top: 14,
+                right: 18,
+                child: IosGlassLanguageButton(
+                  flag: AppState.supportedLocales[appState.currentLocale]?['flag'] ?? '🌐',
+                  languageCode: appState.currentLocale,
+                  onTap: () => _showLanguageSelector(context),
+                  isDark: isDark,
+                ),
+              ),
+            ],
           ),
         ),
       ),

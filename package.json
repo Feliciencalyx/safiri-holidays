@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "safiri-holidays-monorepo",
   "version": "2.0.0",
   "description": "Safiri Holidays Enterprise Platform",
@@ -6,7 +6,11 @@
   "scripts": {
     "start": "cd safiri-backend && node src/server.js",
     "build": "cd safiri-backend && npm install",
-    "postinstall": "cd safiri-backend && npm install"
+    "postinstall": "cd safiri-backend && npm install",
+    "app": "cd flutter_application_v2 && flutter run -d emulator-5554",
+    "app:web": "cd flutter_application_v2 && flutter run -d edge",
+    "autopush": "powershell -ExecutionPolicy Bypass -File ./auto_push.ps1",
+    "push": "powershell -ExecutionPolicy Bypass -File ./auto_push.ps1"
   },
   "dependencies": {
     "@duffel/api": "^4.20.0",

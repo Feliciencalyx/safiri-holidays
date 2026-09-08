@@ -1,12 +1,10 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'supabase_service.dart';
 
 class VisaApiService {
-  static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:5000/api/visas';
-    return 'http://10.0.2.2:5000/api/visas';
-  }
+  static String get baseUrl => '${SupabaseProductionConfig.apiBaseUrl}/visas';
 
   /// Create new Visa Application Case
   static Future<Map<String, dynamic>> createApplication({
