@@ -7,7 +7,6 @@ import '../../screens/flights/flight_search_screen.dart';
 import '../../screens/visa/visa_eligibility_screen.dart';
 import '../../screens/holidays/holidays_list_screen.dart';
 import '../../screens/hotels/hotel_enquiry_screen.dart';
-import '../../screens/bus/bus_booking_screen.dart';
 import '../../features/notifications/presentation/screens/notification_center_screen.dart';
 import '../../features/admin/presentation/screens/admin_dashboard_screen.dart';
 
@@ -20,7 +19,6 @@ class AppRouter {
   static const String visas = '/visas';
   static const String holidays = '/holidays';
   static const String hotels = '/hotels';
-  static const String bus = '/bus';
   static const String notifications = '/notifications';
   static const String admin = '/admin';
 
@@ -42,8 +40,6 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const HolidaysListScreen());
       case hotels:
         return MaterialPageRoute(builder: (_) => const HotelEnquiryScreen());
-      case bus:
-        return MaterialPageRoute(builder: (_) => const BusBookingScreen());
       case notifications:
         return MaterialPageRoute(builder: (_) => const NotificationCenterScreen());
       case admin:

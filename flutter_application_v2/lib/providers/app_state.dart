@@ -219,34 +219,6 @@ class HolidayEnquiryBookingItem {
   });
 }
 
-class BusBookingItem {
-  final String id;
-  final String routeName;
-  final String operatorName;
-  final String travelDate;
-  final String departureTime;
-  final String seatNumber;
-  final double priceUsd;
-  final String passengerName;
-  final String phone;
-  final String status;
-  final String qrCodeData;
-
-  BusBookingItem({
-    required this.id,
-    required this.routeName,
-    required this.operatorName,
-    required this.travelDate,
-    required this.departureTime,
-    required this.seatNumber,
-    required this.priceUsd,
-    required this.passengerName,
-    required this.phone,
-    required this.status,
-    required this.qrCodeData,
-  });
-}
-
 class HotelCatalogItem {
   final String id;
   final String name;
@@ -1205,30 +1177,6 @@ class AppState extends ChangeNotifier {
 
   void addHolidayEnquiry(HolidayEnquiryBookingItem item) {
     _holidayEnquiries.insert(0, item);
-    notifyListeners();
-  }
-
-  // Bus Bookings List Container
-  final List<BusBookingItem> _busBookings = [
-    BusBookingItem(
-      id: '#BUS-4491',
-      routeName: 'Kigali ➔ Musanze Express',
-      operatorName: 'Volcano Express VIP',
-      travelDate: '2026-09-05',
-      departureTime: '08:30 AM',
-      seatNumber: '14B',
-      priceUsd: 12.0,
-      passengerName: 'Violet Nabise',
-      phone: '+250788000999',
-      status: 'Confirmed',
-      qrCodeData: 'BUS-4491-KGL-MSZ-14B',
-    ),
-  ];
-
-  List<BusBookingItem> get busBookings => List.unmodifiable(_busBookings);
-
-  void addBusBooking(BusBookingItem booking) {
-    _busBookings.insert(0, booking);
     notifyListeners();
   }
 

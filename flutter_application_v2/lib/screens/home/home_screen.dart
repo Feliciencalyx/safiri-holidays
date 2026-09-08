@@ -11,7 +11,6 @@ import '../visa/visa_eligibility_screen.dart';
 import '../hotels/hotel_enquiry_screen.dart';
 import '../hotels/hotel_search_results_screen.dart';
 import '../holidays/holidays_list_screen.dart';
-import '../bus/bus_booking_screen.dart';
 import '../../features/notifications/presentation/screens/notification_center_screen.dart';
 import '../../core/services/notification_service.dart';
 
@@ -210,11 +209,11 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
 
-                    // 1. Flight Bookings Card
+                    // 1. Flight Booking Card
                     _buildPrimaryActionCard(
                       context: context,
                       title: appState.tr('flight_bookings'),
-                      subtitle: 'Global Carrier Search & Dynamic E-Ticket Boarding Pass',
+                      subtitle: 'Direct RwandAir & Global Carrier Tickets with Instant E-Boarding Pass',
                       icon: Icons.flight_takeoff_rounded,
                       badgeText: 'Safiri Verified Fares',
                       gradientColors: isDark
@@ -229,48 +228,39 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
 
-                    // 2. Holiday Packages Card (safiriholidays.com Top Packages)
+                    // 2. Visa Application Card
                     _buildPrimaryActionCard(
                       context: context,
-                      title: appState.tr('holiday_packages'),
-                      subtitle: 'Goa, Kerala, Dubai, Bali, Thailand, Europe & Mauritius',
-                      icon: Icons.card_travel_rounded,
-                      badgeText: 'Curated Itineraries',
+                      title: appState.tr('visa_application'),
+                      subtitle: 'East Africa Tourist, Schengen, UAE & Global Express Visa Processing',
+                      icon: Icons.assignment_turned_in_rounded,
+                      badgeText: 'Express Processing',
                       gradientColors: isDark
                           ? [const Color(0xFF382B1E), const Color(0xFF54422C)]
                           : [const Color(0xFF78592E), const Color(0xFFA67C43)],
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const HolidaysListScreen()),
+                          MaterialPageRoute(builder: (_) => const VisaEligibilityScreen()),
                         );
                       },
                     ),
                     const SizedBox(height: 14),
 
-                    // 3. Hotel Bookings & Stays
+                    // 3. Holidays and Hotel Booking Card
                     _buildPrimaryActionCard(
                       context: context,
-                      title: appState.tr('hotels_holidays'),
-                      subtitle: 'Over 30,000 Luxury rooms & budget stay deals worldwide',
-                      icon: Icons.hotel_rounded,
-                      badgeText: 'Free Cancellation',
+                      title: appState.tr('holidays_hotel_booking'),
+                      subtitle: 'Curated Vacation Packages, Luxury Stays & Worldwide Resort Deals',
+                      icon: Icons.beach_access_rounded,
+                      badgeText: 'Best Price Guarantee',
                       gradientColors: isDark
                           ? [const Color(0xFF1B332F), const Color(0xFF294E48)]
                           : [const Color(0xFF0F4D4A), const Color(0xFF177A75)],
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => HotelSearchResultsScreen(
-                              destination: '',
-                              checkIn: DateTime.now(),
-                              checkOut: DateTime.now(),
-                              rooms: 1,
-                              adults: 2,
-                              children: 0,
-                            ),
-                          ),
+                          MaterialPageRoute(builder: (_) => const HolidaysListScreen()),
                         );
                       },
                     ),
@@ -297,66 +287,44 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _buildQuickActionButton(
                           context: context,
-                          icon: Icons.card_travel_rounded,
-                          label: 'Holidays\nPackages',
-                          bgColor: const Color(0xFFF7EFE5),
-                          iconColor: const Color(0xFF78592E),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const HolidaysListScreen()),
-                            );
-                          },
-                        ),
-                        _buildQuickActionButton(
-                          context: context,
-                          icon: Icons.hotel_rounded,
-                          label: 'Book\nHotel',
+                          icon: Icons.flight_takeoff_rounded,
+                          label: 'Flight\nBooking',
                           bgColor: const Color(0xFFE8EEF9),
                           iconColor: const Color(0xFF052469),
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                builder: (_) => HotelSearchResultsScreen(
-                                  destination: '',
-                                  checkIn: DateTime.now(),
-                                  checkOut: DateTime.now(),
-                                  rooms: 1,
-                                  adults: 2,
-                                  children: 0,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        _buildQuickActionButton(
-                          context: context,
-                          icon: Icons.directions_bus_rounded,
-                          label: 'Bus\nExpress',
-                          bgColor: const Color(0xFFE6F4EA),
-                          iconColor: const Color(0xFF137333),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const BusBookingScreen()),
+                              MaterialPageRoute(builder: (_) => const FlightSearchScreen()),
                             );
                           },
                         ),
                         _buildQuickActionButton(
                           context: context,
                           icon: Icons.badge_outlined,
-                          label: 'Visa\nAssist',
+                          label: 'Visa\nApplication',
                           bgColor: const Color(0xFFEBE8F9),
                           iconColor: const Color(0xFF4A3B9B),
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const VisaEligibilityScreen()),
+                            );
+                          },
+                        ),
+                        _buildQuickActionButton(
+                          context: context,
+                          icon: Icons.beach_access_rounded,
+                          label: 'Holidays\n& Hotels',
+                          bgColor: const Color(0xFFF7EFE5),
+                          iconColor: const Color(0xFF78592E),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const HolidaysListScreen()),
                             );
                           },
                         ),
