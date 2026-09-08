@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/services/duffel_api_service.dart';
+import '../../core/services/rwandair_api_service.dart';
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
 import 'flight_detail_screen.dart';
@@ -51,7 +52,11 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
   bool _isLoading = true;
   List<DuffelFlightOffer> _offers = [];
   late String _safiriProtocolUrl;
+  late String _rwandAirBookingUrl;
   final Map<String, String> _selectedFareTierMap = {};
+
+  bool get _isRwandAirRoute =>
+      RwandAirApiService.isRwandAirRoute(widget.originCode, widget.destinationCode);
 
   @override
   void initState() {
@@ -63,6 +68,17 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
       destinationCode: widget.destinationCode,
       destinationCity: widget.destinationCity,
       destinationCountry: widget.destinationCountry,
+      departureDate: widget.travelDates.start,
+      returnDate: widget.isOneWay ? null : widget.travelDates.end,
+      adults: widget.adults,
+      children: widget.children,
+      infants: widget.infants,
+      cabinClass: widget.cabinClass,
+      isOneWay: widget.isOneWay,
+    );
+    _rwandAirBookingUrl = RwandAirApiService.buildDirectRwandAirUrl(
+      originCode: widget.originCode,
+      destinationCode: widget.destinationCode,
       departureDate: widget.travelDates.start,
       returnDate: widget.isOneWay ? null : widget.travelDates.end,
       adults: widget.adults,
@@ -129,6 +145,23 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     }
   }
 
+  Future<void> _launchRwandAirPortal([String? directUrl]) async {
+    final target = directUrl ?? _rwandAirBookingUrl;
+    final uri = Uri.parse(target);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      final fallbackUri = Uri.parse(RwandAirApiService.officialBookingBaseUrl);
+      if (await canLaunchUrl(fallbackUri)) {
+        await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('RwandAir Booking URL: $target')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -156,7 +189,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Protocol Header Bar matching flights.safiriholidays.com
+            // Protocol Header Bar matching flights.safiriholidays.com & RwandAir Direct
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -167,26 +200,69 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'flights.safiriholidays.com Live API Data',
-                        style: TextStyle(color: Color(0xFFFED39D), fontSize: 11, fontWeight: FontWeight.bold),
+                      Row(
+                        children: [
+                          const Text(
+                            'flights.safiriholidays.com',
+                            style: TextStyle(color: Color(0xFFFED39D), fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                          if (_isRwandAirRoute) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF007A3D),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                '🇷🇼 WB DIRECT',
+                                style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                      InkWell(
-                        onTap: _launchSafiriWebUrl,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFED39D),
-                            borderRadius: BorderRadius.circular(12),
+                      Row(
+                        children: [
+                          if (_isRwandAirRoute) ...[
+                            InkWell(
+                              onTap: () => _launchRwandAirPortal(),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                margin: const EdgeInsets.only(right: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF005696),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white24),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Text('🇷🇼', style: TextStyle(fontSize: 10)),
+                                    SizedBox(width: 4),
+                                    Text('RWANDAIR PORTAL', style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                          InkWell(
+                            onTap: _launchSafiriWebUrl,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFED39D),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.open_in_browser_rounded, size: 12, color: Colors.black87),
+                                  SizedBox(width: 4),
+                                  Text('OPEN WEB PORTAL', style: TextStyle(color: Colors.black87, fontSize: 10, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
                           ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.open_in_browser_rounded, size: 12, color: Colors.black87),
-                              SizedBox(width: 4),
-                              Text('OPEN WEB PORTAL', style: TextStyle(color: Colors.black87, fontSize: 10, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
@@ -412,6 +488,21 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                               offer.flightNumber,
                               style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600),
                             ),
+                            if (offer.isRwandAirDirect || offer.airlineCode == 'WB') ...[
+                              const SizedBox(height: 3),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF007A3D).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: const Color(0xFF007A3D).withValues(alpha: 0.25)),
+                                ),
+                                child: Text(
+                                  '🇷🇼 Direct • ${offer.aircraft}',
+                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF007A3D)),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ],
@@ -509,6 +600,41 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                     ),
                   ],
                 ),
+                if (offer.isRwandAirDirect || offer.airlineCode == 'WB') ...[
+                  const SizedBox(height: 12),
+                  InkWell(
+                    onTap: () => _launchRwandAirPortal(offer.directBookingUrl),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF005696).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFF005696).withValues(alpha: 0.3)),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Text('🇷🇼', style: TextStyle(fontSize: 12)),
+                              SizedBox(width: 6),
+                              Text(
+                                'Book Directly on RwandAir (booking.rwandair.com)',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF005696),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Icon(Icons.open_in_new_rounded, size: 12, color: Color(0xFF005696)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

@@ -14,15 +14,15 @@ class FlightSearchScreen extends StatefulWidget {
 
 class _FlightSearchScreenState extends State<FlightSearchScreen> {
   bool _isOneWay = true;
-  String _originCode = 'DEL';
-  String _originName = 'Indira Gandhi International Airport (DEL)';
-  String _originCity = 'Delhi';
-  String _originCountry = 'India';
+  String _originCode = 'KGL';
+  String _originName = 'Kigali International Airport (KGL)';
+  String _originCity = 'Kigali';
+  String _originCountry = 'Rwanda';
 
-  String _destinationCode = 'BOM';
-  String _destinationName = 'Chhatrapati Shivaji Maharaj Intl (BOM)';
-  String _destinationCity = 'Mumbai';
-  String _destinationCountry = 'India';
+  String _destinationCode = 'KME';
+  String _destinationName = 'Kamembe International Airport (KME)';
+  String _destinationCity = 'Cyangugu / Rusizi';
+  String _destinationCountry = 'Rwanda';
 
   String _cabinClass = 'Economy';
   int _adults = 1;

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/services/duffel_api_service.dart';
+import '../../core/services/rwandair_api_service.dart';
 import '../../core/utils/passport_verifier.dart';
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
@@ -189,11 +191,13 @@ class _FlightDetailScreenState extends State<FlightDetailScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.airline_seat_recline_normal_rounded, size: 16, color: Colors.grey),
+                                  const Icon(Icons.flight_rounded, size: 16, color: Colors.grey),
                                   const SizedBox(width: 8),
-                                  Text(
-                                    '${offer.airline} • Boeing 737 / Airbus A350 • ${offer.duration}',
-                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                  Expanded(
+                                    child: Text(
+                                      '${offer.airline} (${offer.flightNumber}) • ${offer.aircraft} • ${offer.stops} • ${offer.duration}',
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -304,6 +308,39 @@ class _FlightDetailScreenState extends State<FlightDetailScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (offer.isRwandAirDirect || offer.airlineCode == 'WB') ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final url = offer.directBookingUrl ?? RwandAirApiService.officialBookingBaseUrl;
+                            final uri = Uri.parse(url);
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            }
+                          },
+                          icon: const Text('🇷🇼', style: TextStyle(fontSize: 16)),
+                          label: const Text(
+                            'OPEN OFFICIAL RWANDAIR PORTAL (booking.rwandair.com)',
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF005696),
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: const BorderSide(color: Color(0xFF005696), width: 1.5),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            backgroundColor: const Color(0xFF005696).withValues(alpha: 0.06),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                   Row(
                     children: [
                       // Option 1: Send Flight Enquiry / Request Custom Quote
