@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -41,13 +41,14 @@ app.use((err, req, res, next) => {
   console.error('[SAFIRI BACKEND ERROR]', err);
   res.status(err.status || 500).json({
     success: false,
-    message: 'Unable to process your request right now. Please try again or contact support.',
+    message: err.message || 'Unable to process your request right now. Please try again or contact support.',
   });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`====================================================`);
-  console.log(`✈️  Safiri Backend Online on port ${PORT}`);
-  console.log(`🌐  Target Domain: https://api.safiriholidays.com`);
+  console.log(`âœˆï¸  Safiri Backend Online on port ${PORT}`);
+  console.log(`ðŸŒ  Target Domain: https://api.safiriholidays.com`);
   console.log(`====================================================`);
 });
+
