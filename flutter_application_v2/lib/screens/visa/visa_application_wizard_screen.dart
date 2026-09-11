@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import '../../core/services/payment_service.dart';
 import '../../providers/app_state.dart';
@@ -22,9 +22,9 @@ class VisaApplicationWizardScreen extends StatefulWidget {
 class _VisaApplicationWizardScreenState extends State<VisaApplicationWizardScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  final _passportController = TextEditingController(text: 'RWA-8810294-P');
-  final _emailController = TextEditingController(text: 'violet.nabise@safiri.com');
-  final _phoneController = TextEditingController(text: '+250788000123');
+  late TextEditingController _passportController;
+  late TextEditingController _emailController;
+  late TextEditingController _phoneController;
 
   String _visaType = 'Tourist Short-Stay (30 Days)';
   bool _hasPassportScan = true;
@@ -41,6 +41,9 @@ class _VisaApplicationWizardScreenState extends State<VisaApplicationWizardScree
     super.initState();
     final appState = Provider.of<AppState>(context, listen: false);
     _nameController = TextEditingController(text: appState.currentUserName);
+    _passportController = TextEditingController(text: appState.currentUserPassportNumber);
+    _emailController = TextEditingController(text: appState.currentUserEmail);
+    _phoneController = TextEditingController(text: appState.currentUserPhone);
   }
 
   @override
@@ -221,7 +224,7 @@ class _VisaApplicationWizardScreenState extends State<VisaApplicationWizardScree
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('4. FEE BREAKDOWN & PAYMENT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+                      const Text('4. ESTIMATED FEE BREAKDOWN & ENQUIRY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
                       const SizedBox(height: 10),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -242,7 +245,7 @@ class _VisaApplicationWizardScreenState extends State<VisaApplicationWizardScree
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Total Visa Fee:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                          const Text('Estimated Total Fee:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                           Text(
                             appState.formatPrice(_totalFeeUsd),
                             style: TextStyle(fontFamily: 'Montserrat', fontSize: 18, fontWeight: FontWeight.w800, color: primaryNavy),
@@ -258,14 +261,16 @@ class _VisaApplicationWizardScreenState extends State<VisaApplicationWizardScree
                 SizedBox(
                   width: double.infinity,
                   height: 50,
-                  child: ElevatedButton(
+                  child: ElevatedButton.icon(
                     onPressed: _isProcessing ? null : _submitVisaApplication,
+                    icon: const Icon(Icons.send_rounded, size: 18, color: Colors.white),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF052469),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: _isProcessing
+                    label: _isProcessing
                         ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                        : Text('SUBMIT APPLICATION & PAY ${appState.formatPrice(_totalFeeUsd)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        : const Text('SUBMIT APPLICATION & SEND ENQUIRY', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                   ),
                 ),
               ],
@@ -295,21 +300,26 @@ class _VisaApplicationWizardScreenState extends State<VisaApplicationWizardScree
     final visaId = '#VISA-${9000 + appState.visaApplications.length}';
 
     try {
-      await _paymentService.createPayment(
-        bookingId: visaId,
-        customerName: _nameController.text,
-        email: _emailController.text,
-        phone: _phoneController.text,
-        amount: _totalFareRwf,
-        paymentMethod: _paymentMethod.toApiValue(),
-      );
+      // Record payment attempt or log enquiry in background
+      try {
+        await _paymentService.createPayment(
+          bookingId: visaId,
+          customerName: _nameController.text,
+          email: _emailController.text,
+          phone: _phoneController.text,
+          amount: _totalFareRwf,
+          paymentMethod: _paymentMethod.toApiValue(),
+        );
+      } catch (_) {
+        // Non-blocking for enquiry mode
+      }
 
       final newApp = VisaApplicationItem(
         id: visaId,
         destinationCountry: widget.destinationCountry,
         applicantNationality: widget.nationality,
-        currentStep: 3, // Advanced to Documents Approved / Processing
-        status: 'Submitted & Paid',
+        currentStep: 2, // Application Received, In Concierge Review
+        status: 'Enquiry Submitted',
         documentsUploaded: {
           'Passport Scan': _hasPassportScan,
           'Passport Photo': _hasPhoto,
@@ -330,7 +340,7 @@ class _VisaApplicationWizardScreenState extends State<VisaApplicationWizardScree
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Visa Application $visaId Submitted Successfully!'),
+            content: Text('Visa Application & Enquiry $visaId Submitted Successfully! Safiri Concierge will contact you.'),
             backgroundColor: const Color(0xFF2E7D32),
           ),
         );

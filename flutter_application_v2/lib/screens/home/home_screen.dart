@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import '../../core/widgets/safiri_logo.dart';
 import '../../core/widgets/user_profile_modal.dart';
@@ -13,6 +13,7 @@ import '../hotels/hotel_search_results_screen.dart';
 import '../holidays/holidays_list_screen.dart';
 import '../../features/notifications/presentation/screens/notification_center_screen.dart';
 import '../../core/services/notification_service.dart';
+import '../currency/currency_converter_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -57,7 +58,12 @@ class HomeScreen extends StatelessWidget {
                     ),
                     // Multi-Currency Badge Selector
                     InkWell(
-                      onTap: () => _showCurrencySelector(context),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const CurrencyConverterScreen()),
+                        );
+                      },
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -89,7 +95,7 @@ class HomeScreen extends StatelessWidget {
                         isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
                         size: 22,
                       ),
-                      tooltip: 'Toggle Light/Dark Theme',
+                      tooltip: appState.tr('toggle_theme'),
                     ),
                     // Notification Center Bell
                     Stack(
@@ -103,7 +109,7 @@ class HomeScreen extends StatelessWidget {
                             );
                           },
                           icon: const Icon(Icons.notifications_none_rounded, size: 24),
-                          tooltip: 'Notifications',
+                          tooltip: appState.tr('notifications'),
                         ),
                         if (notificationService.unreadCount > 0)
                           Positioned(
@@ -213,7 +219,7 @@ class HomeScreen extends StatelessWidget {
                     _buildPrimaryActionCard(
                       context: context,
                       title: appState.tr('flight_bookings'),
-                      subtitle: 'Direct RwandAir & Global Carrier Tickets with Instant E-Boarding Pass',
+                      subtitle: appState.tr('flight_bookings_sub'),
                       icon: Icons.flight_takeoff_rounded,
                       badgeText: 'Safiri Verified Fares',
                       gradientColors: isDark
@@ -232,7 +238,7 @@ class HomeScreen extends StatelessWidget {
                     _buildPrimaryActionCard(
                       context: context,
                       title: appState.tr('visa_application'),
-                      subtitle: 'East Africa Tourist, Schengen, UAE & Global Express Visa Processing',
+                      subtitle: appState.tr('visa_app_sub'),
                       icon: Icons.assignment_turned_in_rounded,
                       badgeText: 'Express Processing',
                       gradientColors: isDark
@@ -251,7 +257,7 @@ class HomeScreen extends StatelessWidget {
                     _buildPrimaryActionCard(
                       context: context,
                       title: appState.tr('holidays_hotel_booking'),
-                      subtitle: 'Curated Vacation Packages, Luxury Stays & Worldwide Resort Deals',
+                      subtitle: appState.tr('holidays_sub'),
                       icon: Icons.beach_access_rounded,
                       badgeText: 'Best Price Guarantee',
                       gradientColors: isDark
@@ -277,7 +283,7 @@ class HomeScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Quick Actions',
+                      appState.tr('quick_actions'),
                       style: TextStyle(
                         fontFamily: 'Montserrat',
                         fontSize: 18,
@@ -798,66 +804,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  void _showCurrencySelector(BuildContext context) {
-    final appState = Provider.of<AppState>(context, listen: false);
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Select Multi-Currency',
-                style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: ListView(
-                  children: AppState.currencyData.entries.map((entry) {
-                    final isSelected = appState.currentCurrency == entry.key;
-                    final name = entry.value['name'] as String;
-                    final symbol = entry.value['symbol'] as String;
-
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: isSelected ? MajesticHorizonTheme.lightPrimaryNavy : Colors.grey.shade200,
-                        child: Text(
-                          symbol.trim(),
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text(entry.key),
-                      trailing: isSelected ? const Icon(Icons.check_circle_rounded, color: MajesticHorizonTheme.lightPrimaryNavy) : null,
-                      onTap: () {
-                        appState.setCurrency(entry.key);
-                        Navigator.pop(context);
-                      },
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   void _showSettingsModal(BuildContext context) {
     final appState = Provider.of<AppState>(context, listen: false);
@@ -899,7 +845,10 @@ class HomeScreen extends StatelessWidget {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
                   Navigator.pop(context);
-                  _showCurrencySelector(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CurrencyConverterScreen()),
+                  );
                 },
               ),
             ],

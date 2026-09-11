@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/services/duffel_api_service.dart';
@@ -175,7 +175,7 @@ class _FlightCheckoutModalState extends State<FlightCheckoutModal> {
                     const SizedBox(height: 18),
 
                     // Gateway Selection Header
-                    const Text('SELECT PAYMENT METHOD', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    const Text('PREFERRED PAYMENT METHOD UPON CONFIRMATION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
                     const SizedBox(height: 10),
 
                     // Method 1: Card
@@ -219,21 +219,26 @@ class _FlightCheckoutModalState extends State<FlightCheckoutModal> {
             ),
             const SizedBox(height: 12),
 
-            // Pay Action CTA Button
+            // Send Booking Enquiry Action CTA Button
             SizedBox(
               width: double.infinity,
               height: 48,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
                 onPressed: _isProcessing ? null : _processPayment,
-                child: _isProcessing
+                icon: const Icon(Icons.send_rounded, size: 18, color: Colors.white),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF052469),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                label: _isProcessing
                     ? const SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                       )
                     : Text(
-                        'PAY ${appState.formatPrice(widget.priceUsd)}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                        'SEND BOOKING ENQUIRY (${appState.formatPrice(widget.priceUsd)})',
+                        style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.white),
                       ),
               ),
             ),

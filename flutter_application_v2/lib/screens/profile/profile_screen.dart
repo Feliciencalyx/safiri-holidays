@@ -1,11 +1,12 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import '../../core/widgets/user_profile_modal.dart';
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../visa/visa_eligibility_screen.dart';
-import '../../features/admin/presentation/screens/admin_dashboard_screen.dart';
+import '../documents/passport_vault_modal.dart';
+import '../currency/currency_converter_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -37,7 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'My Benefits',
+                    appState.tr('included_privileges'),
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontSize: 26,
@@ -50,7 +51,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     ),
-                    child: const Text('View History'),
+                    child: Text(appState.tr('view_details')),
                   ),
                 ],
               ),
@@ -124,12 +125,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Row(
-                              children: const [
-                                Icon(Icons.edit_rounded, size: 14, color: Color(0xFF052469)),
-                                SizedBox(width: 4),
+                              children: [
+                                const Icon(Icons.edit_rounded, size: 14, color: Color(0xFF052469)),
+                                const SizedBox(width: 4),
                                 Text(
-                                  'EDIT PROFILE',
-                                  style: TextStyle(
+                                  appState.tr('edit_profile').toUpperCase(),
+                                  style: const TextStyle(
                                     color: Color(0xFF052469),
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
@@ -144,16 +145,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const Divider(height: 24, color: Colors.white24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Phone & Passport:', style: TextStyle(color: Colors.white60, fontSize: 10)),
-                            Text(
-                              '${appState.currentUserPhone} • ${appState.currentUserPassportNumber}',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                          ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('${appState.tr('phone_number')} & ${appState.tr('passport_number')}:', style: const TextStyle(color: Colors.white60, fontSize: 10)),
+                              Text(
+                                '${appState.currentUserPhone} • ${appState.currentUserPassportNumber}',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                              const SizedBox(height: 6),
+                              Text('${appState.tr('registered_address')}:', style: const TextStyle(color: Colors.white60, fontSize: 10)),
+                              Text(
+                                appState.currentUserAddress,
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                            ],
+                          ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
@@ -162,7 +172,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            appState.isPassportVerified ? 'PASSPORT VERIFIED' : 'PASSPORT PENDING',
+                            appState.isPassportVerified ? appState.tr('verified').toUpperCase() : appState.tr('pending_verification').toUpperCase(),
                             style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -171,14 +181,84 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
+
+              // Linked System Records & Relationships Section
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: MajesticHorizonTheme.radiusCard,
+                  border: Border.all(
+                    color: isDark ? MajesticHorizonTheme.darkBorder : MajesticHorizonTheme.lightBorder,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF052469).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.hub_outlined, color: Color(0xFF052469), size: 18),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                appState.tr('profile_relationships'),
+                                style: const TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              Text(
+                                '${appState.tr('sync_across_safiri')} ${appState.currentUserEmail}',
+                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 20),
+                    _buildProfileRelationshipRow(
+                      icon: Icons.confirmation_number_outlined,
+                      title: appState.tr('linked_bookings'),
+                      subtitle: '${appState.bookings.length} ${appState.tr('reservations_sync')}',
+                      actionLabel: appState.tr('view_trips'),
+                      onTap: () => appState.setSelectedTab(1),
+                    ),
+                    const SizedBox(height: 10),
+                    _buildProfileRelationshipRow(
+                      icon: Icons.assignment_outlined,
+                      title: appState.tr('visa_apps_vault'),
+                      subtitle: '${appState.visaApplications.length} ${appState.tr('active_apps_under_passport')} ${appState.currentUserPassportNumber}',
+                      actionLabel: appState.tr('view_visas'),
+                      onTap: () => appState.setSelectedTab(2),
+                    ),
+                    const SizedBox(height: 10),
+                    _buildProfileRelationshipRow(
+                      icon: Icons.badge_outlined,
+                      title: appState.tr('biometric_passport_scan'),
+                      subtitle: '${appState.passportCountry} • ${appState.tr('expires')} ${appState.passportExpiryDate}',
+                      actionLabel: appState.tr('view_vault'),
+                      onTap: () => PassportVaultModal.show(context),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
 
               // Included Privileges Header & Filter Bar matching Image 6
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Included Privileges',
+                    appState.tr('included_privileges'),
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontSize: 20,
@@ -187,7 +267,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   Row(
-                    children: ['All', 'Travel', 'Lifestyle'].map((filter) {
+                    children: [
+                      {'key': 'All', 'label': appState.tr('filter_all')},
+                      {'key': 'Travel', 'label': appState.tr('filter_travel')},
+                      {'key': 'Lifestyle', 'label': appState.tr('filter_lifestyle')},
+                    ].map((item) {
+                      final filter = item['key']!;
+                      final label = item['label']!;
                       final isSelected = _privilegeFilter == filter;
 
                       return InkWell(
@@ -197,7 +283,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: Column(
                             children: [
                               Text(
-                                filter,
+                                label,
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -224,23 +310,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Privilege 1: Global Lounge Access matching Image 6
               _buildPrivilegeCard(
                 context: context,
+                appState: appState,
                 icon: Icons.chair_rounded,
-                title: 'Global Lounge Access',
-                description: 'Complimentary access to over 1,200 airport lounges worldwide, regardless of ticket class.',
-                btnText: 'View Details',
+                title: appState.tr('lounge_access'),
+                description: appState.tr('lounge_access_desc'),
+                btnText: appState.tr('view_details'),
                 cardBg: cardBg,
                 isDark: isDark,
-                onTap: () => _showPrivilegeModal(context, 'Global Lounge Access', 'Access over 1,200 luxury partner lounges with priority check-in and complimentary dining.'),
+                onTap: () => _showPrivilegeModal(context, appState.tr('lounge_access'), appState.tr('lounge_access_desc')),
               ),
               const SizedBox(height: 14),
 
               // Privilege 2: Priority Visa Processing matching Image 6
               _buildPrivilegeCard(
                 context: context,
+                appState: appState,
                 icon: Icons.assignment_turned_in_rounded,
-                title: 'Priority Visa Processing',
-                description: 'Expedited handling of visa applications with dedicated concierges guiding the process.',
-                btnText: 'Apply Now',
+                title: appState.tr('visa_application'),
+                description: appState.tr('visa_desc'),
+                btnText: appState.tr('check_route'),
                 cardBg: cardBg,
                 isDark: isDark,
                 onTap: () {
@@ -255,100 +343,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Privilege 3: Luxury Concierge Support matching Image 6
               _buildPrivilegeCard(
                 context: context,
+                appState: appState,
                 icon: Icons.headset_mic_rounded,
-                title: 'Luxury Concierge Support',
-                description: '24/7 dedicated support for reservations, emergency travel changes, and bespoke requests.',
-                btnText: 'Contact Concierge',
+                title: appState.tr('concierge_support'),
+                description: appState.tr('concierge_support_desc'),
+                btnText: appState.tr('contact_concierge'),
                 cardBg: cardBg,
                 isDark: isDark,
-                onTap: () => _showPrivilegeModal(context, 'Luxury Concierge Support', 'Your dedicated concierge manager is available via direct phone or in-app messaging 24/7/365.'),
+                onTap: () => _showPrivilegeModal(context, appState.tr('concierge_support'), appState.tr('concierge_support_desc')),
               ),
               const SizedBox(height: 30),
 
-              // Admin Portal Access Card
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  borderRadius: MajesticHorizonTheme.radiusHero,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: MajesticHorizonTheme.lightCardShadow,
-                  border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.6), width: 1.5),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: const [
-                            Icon(Icons.admin_panel_settings_rounded, color: Color(0xFFF59E0B), size: 26),
-                            SizedBox(width: 8),
-                            Text(
-                              'Safiri Admin Portal',
-                              style: TextStyle(
-                                fontFamily: 'Montserrat',
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF59E0B),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            'ADMIN CONSOLE',
-                            style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.w800),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Manage flight routes, holiday packages, review customer bookings, manage users & system configurations.',
-                      style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.3),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          appState.setAdminMode(true);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF59E0B),
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        icon: const Icon(Icons.dashboard_rounded, size: 20),
-                        label: const Text(
-                          'Open Admin Section',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              // Preferences & Controls Section
+              // Preferences & Controls Section (Admin Portal Card removed for customer profile security)
               Text(
-                'App Engine Settings',
+                appState.tr('app_settings'),
                 style: TextStyle(
                   fontFamily: 'Montserrat',
                   fontSize: 18,
@@ -362,8 +370,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 tileColor: cardBg,
                 shape: RoundedRectangleBorder(borderRadius: MajesticHorizonTheme.radiusCard),
                 leading: const Icon(Icons.currency_exchange_rounded),
-                title: const Text('Multi-Currency Engine', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('Active: ${appState.currentCurrency}'),
+                title: Text(appState.tr('multi_currency'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('${appState.tr('active_currency')}: ${appState.currentCurrency}'),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => _showCurrencyDialog(context),
               ),
@@ -372,8 +380,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 tileColor: cardBg,
                 shape: RoundedRectangleBorder(borderRadius: MajesticHorizonTheme.radiusCard),
                 leading: const Icon(Icons.language_rounded),
-                title: const Text('Internationalization (i18n)', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('Locale: ${AppState.supportedLocales[appState.currentLocale]?['native']} (${appState.currentLocale.toUpperCase()})'),
+                title: Text(appState.tr('i18n_title'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('${appState.tr('locale_label')}: ${AppState.supportedLocales[appState.currentLocale]?['native']} (${appState.currentLocale.toUpperCase()})'),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => _showLanguageDialog(context),
               ),
@@ -382,8 +390,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 tileColor: cardBg,
                 shape: RoundedRectangleBorder(borderRadius: MajesticHorizonTheme.radiusCard),
                 secondary: Icon(isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded),
-                title: const Text('Dark Theme Engine (Inverted)', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(isDark ? 'Majestic Horizon Dark Mode' : 'Majestic Horizon Light Mode'),
+                title: Text(appState.tr('dark_theme'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(isDark ? appState.tr('dark_mode_active') : appState.tr('light_mode_active')),
                 value: isDark,
                 onChanged: (val) => appState.toggleTheme(),
               ),
@@ -396,6 +404,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildPrivilegeCard({
     required BuildContext context,
+    required AppState appState,
     required IconData icon,
     required String title,
     required String description,
@@ -434,9 +443,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: const Color(0xFFFED39D).withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: const Text(
-                  'Active',
-                  style: TextStyle(
+                child: Text(
+                  appState.tr('active_status'),
+                  style: const TextStyle(
                     color: Color(0xFF78592E),
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -477,6 +486,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showPrivilegeModal(BuildContext context, String title, String details) {
+    final appState = Provider.of<AppState>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -485,7 +495,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(appState.tr('close')),
           ),
         ],
       ),
@@ -523,31 +533,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showCurrencyDialog(BuildContext context) {
-    final appState = Provider.of<AppState>(context, listen: false);
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            const Text('Multi-Currency Engine', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            ...AppState.currencyData.entries.map((e) {
-              return ListTile(
-                title: Text('${e.value['name']} (${e.key})'),
-                subtitle: Text('Symbol: ${e.value['symbol']}'),
-                trailing: appState.currentCurrency == e.key ? const Icon(Icons.check, color: Color(0xFF052469)) : null,
-                onTap: () {
-                  appState.setCurrency(e.key);
-                  Navigator.pop(context);
-                },
-              );
-            }),
-          ],
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CurrencyConverterScreen()),
     );
   }
 
@@ -561,7 +549,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            const Text('Language & i18n Locale', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(appState.tr('select_language'), style: const TextStyle(fontFamily: 'Montserrat', fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             ...AppState.supportedLocales.entries.map((e) {
               return ListTile(
@@ -577,6 +565,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildProfileRelationshipRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String actionLabel,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: const Color(0xFF052469).withValues(alpha: 0.08),
+              child: Icon(icon, size: 16, color: const Color(0xFF052469)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                  Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                ],
+              ),
+            ),
+            Text(
+              actionLabel,
+              style: const TextStyle(color: Color(0xFF052469), fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 11, color: Color(0xFF052469)),
+          ],
+        ),
+      ),
     );
   }
 }

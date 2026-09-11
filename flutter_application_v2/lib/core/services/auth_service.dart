@@ -10,6 +10,7 @@ class AuthUser {
   final String username;
   final String role;
   final String phone;
+  final String address;
   final String passportNumber;
   final bool isPassportVerified;
   final String passportCountry;
@@ -21,6 +22,7 @@ class AuthUser {
     required this.username,
     required this.role,
     required this.phone,
+    this.address = 'Kigali, Rwanda',
     this.passportNumber = 'PC9920148X',
     this.isPassportVerified = true,
     this.passportCountry = 'Rwanda',
@@ -34,6 +36,7 @@ class AuthUser {
       username: json['username'] ?? '',
       role: json['role'] ?? 'customer',
       phone: json['phone'] ?? '',
+      address: json['address'] ?? 'Kigali, Rwanda',
       passportNumber: json['passportNumber'] ?? json['passport'] ?? 'PC9920148X',
       isPassportVerified: json['isPassportVerified'] ?? true,
       passportCountry: json['passportCountry'] ?? 'Rwanda',
@@ -48,6 +51,7 @@ class AuthUser {
       'username': username,
       'role': role,
       'phone': phone,
+      'address': address,
       'passportNumber': passportNumber,
       'isPassportVerified': isPassportVerified,
       'passportCountry': passportCountry,
@@ -134,6 +138,7 @@ class AuthService {
           username: usernameOrEmail.contains('@') ? usernameOrEmail.split('@')[0] : usernameOrEmail,
           role: 'customer',
           phone: '+250788000999',
+          address: 'Kigali, Rwanda',
         ),
         token: 'mock_jwt_token_${DateTime.now().millisecondsSinceEpoch}',
       );
@@ -146,6 +151,7 @@ class AuthService {
     required String email,
     required String password,
     required String phone,
+    String address = 'Kigali, Rwanda',
     String passportNumber = 'PC9920148X',
     String role = 'customer',
   }) async {
@@ -161,6 +167,7 @@ class AuthService {
               'email': email,
               'password': password,
               'phone': phone,
+              'address': address,
               'passportNumber': passportNumber,
               'role': role,
             }),
@@ -198,6 +205,7 @@ class AuthService {
             username: email.contains('@') ? email.split('@')[0] : email,
             role: role,
             phone: phone,
+            address: address,
             passportNumber: passportNumber.isNotEmpty ? passportNumber : 'PC9920148X',
             isPassportVerified: passportNumber.isNotEmpty,
             passportCountry: 'Rwanda',
@@ -225,6 +233,7 @@ class AuthService {
           username: email.contains('@') ? email.split('@')[0] : email,
           role: role,
           phone: phone,
+          address: address,
           passportNumber: passportNumber.isNotEmpty ? passportNumber : 'PC9920148X',
           isPassportVerified: passportNumber.isNotEmpty,
           passportCountry: 'Rwanda',

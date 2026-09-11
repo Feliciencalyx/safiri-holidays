@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
@@ -48,7 +48,7 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'My Passes & Bookings',
+                    appState.tr('my_passes_bookings'),
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontSize: 24,
@@ -67,7 +67,7 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
                             MaterialPageRoute(builder: (_) => const NotificationCenterScreen()),
                           );
                         },
-                        tooltip: 'Notifications',
+                        tooltip: appState.tr('notifications'),
                       ),
                       if (notificationService.unreadCount > 0)
                         Positioned(
@@ -103,10 +103,10 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
               indicatorWeight: 3,
               labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               tabs: [
-                const Tab(text: 'All'),
-                Tab(text: 'Upcoming (${appState.bookings.length})'),
-                const Tab(text: 'Completed'),
-                Tab(text: 'Enquiries (${appState.hotelEnquiries.length})'),
+                Tab(text: appState.tr('tab_all')),
+                Tab(text: '${appState.tr('tab_upcoming')} (${appState.bookings.length})'),
+                Tab(text: appState.tr('tab_completed')),
+                Tab(text: '${appState.tr('tab_enquiries')} (${appState.hotelEnquiries.length})'),
               ],
             ),
             const Divider(height: 1),
@@ -116,10 +116,10 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildBookingsList(appState.bookings, appState.hotelEnquiries),
-                  _buildBookingsList(appState.bookings, []),
-                  _buildBookingsList([], []),
-                  _buildEnquiriesList(appState.hotelEnquiries),
+                  _buildBookingsList(appState.bookings, appState.hotelEnquiries, appState),
+                  _buildBookingsList(appState.bookings, [], appState),
+                  _buildBookingsList([], [], appState),
+                  _buildEnquiriesList(appState.hotelEnquiries, appState),
                 ],
               ),
             ),
@@ -129,21 +129,21 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildBookingsList(List<BookingItem> bookings, List<HotelEnquiryItem> enquiries) {
+  Widget _buildBookingsList(List<BookingItem> bookings, List<HotelEnquiryItem> enquiries, AppState appState) {
     if (bookings.isEmpty && enquiries.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.airplane_ticket_outlined, size: 64, color: Colors.grey),
-            SizedBox(height: 12),
+          children: [
+            const Icon(Icons.airplane_ticket_outlined, size: 64, color: Colors.grey),
+            const SizedBox(height: 12),
             Text(
-              'No completed bookings yet',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.grey),
+              appState.tr('no_bookings'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.grey),
             ),
             Text(
-              'Your past travel itineraries will appear here.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              appState.tr('no_bookings_desc'),
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
         ),
@@ -161,9 +161,9 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
         }),
         if (enquiries.isNotEmpty) ...[
           const SizedBox(height: 10),
-          const Text(
-            'ACTIVE HOTEL ENQUIRIES',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+          Text(
+            appState.tr('tab_enquiries').toUpperCase(),
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
           ),
           const SizedBox(height: 10),
           ...enquiries.map((e) => _buildEnquiryCard(e)),
@@ -172,9 +172,9 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildEnquiriesList(List<HotelEnquiryItem> enquiries) {
+  Widget _buildEnquiriesList(List<HotelEnquiryItem> enquiries, AppState appState) {
     if (enquiries.isEmpty) {
-      return const Center(child: Text('No active hotel enquiries.'));
+      return Center(child: Text(appState.tr('no_enquiries')));
     }
 
     return ListView(

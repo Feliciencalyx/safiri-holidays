@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
@@ -29,6 +29,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
+  late TextEditingController _addressController;
   late TextEditingController _passportController;
   PassportVerificationResult? _passportResult;
 
@@ -48,6 +49,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
     _nameController = TextEditingController(text: appState.currentUserName);
     _emailController = TextEditingController(text: appState.currentUserEmail);
     _phoneController = TextEditingController(text: appState.currentUserPhone);
+    _addressController = TextEditingController(text: appState.currentUserAddress);
     _passportController = TextEditingController(text: appState.currentUserPassportNumber);
     _passportResult = PassportVerifierService.verify(appState.currentUserPassportNumber);
   }
@@ -57,6 +59,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _addressController.dispose();
     _passportController.dispose();
     super.dispose();
   }
@@ -70,6 +73,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
       phone: _phoneController.text.trim(),
+      address: _addressController.text.trim(),
       passportNumber: passportInput,
       isPassportVerified: passportRes.isValid,
       passportCountry: passportRes.countryName,
@@ -480,6 +484,11 @@ class _UserProfileModalState extends State<UserProfileModal> {
                 subtitle: appState.currentUserPhone,
               ),
               _buildCredentialTile(
+                icon: Icons.location_on_outlined,
+                title: 'Address / Location',
+                subtitle: appState.currentUserAddress,
+              ),
+              _buildCredentialTile(
                 icon: Icons.badge_outlined,
                 title: 'Passport Number',
                 subtitle: appState.currentUserPassportNumber,
@@ -587,6 +596,11 @@ class _UserProfileModalState extends State<UserProfileModal> {
               TextFormField(
                 controller: _phoneController,
                 decoration: const InputDecoration(labelText: 'Phone Number', prefixIcon: Icon(Icons.phone_android_rounded)),
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _addressController,
+                decoration: const InputDecoration(labelText: 'Address', prefixIcon: Icon(Icons.location_on_outlined)),
               ),
               const SizedBox(height: 10),
 

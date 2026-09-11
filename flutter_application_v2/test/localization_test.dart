@@ -1,4 +1,9 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_application_v2/core/localization/app_translations.dart';
 import 'package:flutter_application_v2/providers/app_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -117,5 +122,162 @@ void main() {
       expect(appState.getTimeGreeting(overrideTime: DateTime(2026, 9, 8, 13, 0)), 'Mwiriwe');
       expect(appState.getTimeGreeting(overrideTime: DateTime(2026, 9, 8, 22, 0)), 'Mwiriwe Neza');
     });
+
+    test('App-wide screen keys translate across all 6 supported locales', () {
+      final appState = AppState();
+
+      for (final locale in ['en', 'rw', 'fr', 'sw', 'es', 'ar']) {
+        appState.setLocale(locale);
+
+        // Profile keys
+        expect(appState.tr('profile_relationships').isNotEmpty, isTrue);
+        expect(appState.tr('linked_bookings').isNotEmpty, isTrue);
+        expect(appState.tr('visa_apps_vault').isNotEmpty, isTrue);
+        expect(appState.tr('biometric_passport_scan').isNotEmpty, isTrue);
+        expect(appState.tr('included_privileges').isNotEmpty, isTrue);
+        expect(appState.tr('app_settings').isNotEmpty, isTrue);
+
+        // Bookings keys
+        expect(appState.tr('my_passes_bookings').isNotEmpty, isTrue);
+        expect(appState.tr('tab_all').isNotEmpty, isTrue);
+        expect(appState.tr('tab_upcoming').isNotEmpty, isTrue);
+        expect(appState.tr('no_bookings').isNotEmpty, isTrue);
+
+        // Documents keys
+        expect(appState.tr('documents_vault').isNotEmpty, isTrue);
+        expect(appState.tr('find_facility').isNotEmpty, isTrue);
+        expect(appState.tr('active_visa_apps').isNotEmpty, isTrue);
+        expect(appState.tr('passport_scan').isNotEmpty, isTrue);
+
+        // Home keys
+        expect(appState.tr('quick_actions').isNotEmpty, isTrue);
+        expect(appState.tr('flight_bookings_sub').isNotEmpty, isTrue);
+      }
+    });
+
+    test('Specific translation accuracy across distinct languages', () {
+      final appState = AppState();
+
+      // French
+      appState.setLocale('fr');
+      expect(appState.tr('my_passes_bookings'), 'Mes Billets & Réservations');
+      expect(appState.tr('documents_vault'), 'Documents & Coffre-fort');
+      expect(appState.tr('profile_relationships'), 'Relations & Activité du Profil');
+
+      // Kinyarwanda
+      appState.setLocale('rw');
+      expect(appState.tr('my_passes_bookings'), 'Amatike n\'Ibyafashwe Byanjye');
+      expect(appState.tr('documents_vault'), 'Inyandiko n\'Ububiko');
+      expect(appState.tr('profile_relationships'), 'Isano ry\'Umwirondoro n\'Ibikorwa');
+
+      // Swahili
+      appState.setLocale('sw');
+      expect(appState.tr('my_passes_bookings'), 'Tiketi na Maagizo Yangu');
+      expect(appState.tr('documents_vault'), 'Nyaraka na Hifadhi');
+      expect(appState.tr('profile_relationships'), 'Mahusiano na Shughuli za Wasifu');
+
+      // Spanish
+      appState.setLocale('es');
+      expect(appState.tr('my_passes_bookings'), 'Mis Pases y Reservas');
+      expect(appState.tr('documents_vault'), 'Documentos y Bóveda');
+      expect(appState.tr('profile_relationships'), 'Relaciones y Actividad del Perfil');
+
+      // Arabic
+      appState.setLocale('ar');
+      expect(appState.tr('my_passes_bookings'), 'تذاكري وحجوزاتي');
+      expect(appState.tr('documents_vault'), 'الوثائق والخزينة');
+      expect(appState.tr('profile_relationships'), 'علاقات الملف الشخصي والنشاط');
+    });
+
+    testWidgets('TextField finds MaterialLocalizations in all 6 locales without throwing', (tester) async {
+      final appState = AppState();
+
+      for (final localeCode in ['en', 'fr', 'rw', 'sw', 'es', 'ar']) {
+        appState.setLocale(localeCode);
+
+        await tester.pumpWidget(
+          ChangeNotifierProvider<AppState>.value(
+            value: appState,
+            child: Consumer<AppState>(
+              builder: (context, state, _) {
+                return MaterialApp(
+                  locale: Locale(state.currentLocale),
+                  supportedLocales: AppState.supportedLocales.keys.map((c) => Locale(c)).toList(),
+                  localizationsDelegates: const [
+                    _TestRwandaMaterialLocalizationsDelegate(),
+                    _TestRwandaWidgetsLocalizationsDelegate(),
+                    _TestRwandaCupertinoLocalizationsDelegate(),
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  home: Scaffold(
+                    body: Form(
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            initialValue: 'Test in $localeCode',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+        expect(find.byType(TextFormField), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }
+    });
   });
 }
+
+class _TestRwandaMaterialLocalizationsDelegate extends LocalizationsDelegate<MaterialLocalizations> {
+  const _TestRwandaMaterialLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => locale.languageCode == 'rw';
+
+  @override
+  Future<MaterialLocalizations> load(Locale locale) {
+    return SynchronousFuture<MaterialLocalizations>(const DefaultMaterialLocalizations());
+  }
+
+  @override
+  bool shouldReload(_TestRwandaMaterialLocalizationsDelegate old) => false;
+}
+
+class _TestRwandaWidgetsLocalizationsDelegate extends LocalizationsDelegate<WidgetsLocalizations> {
+  const _TestRwandaWidgetsLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => locale.languageCode == 'rw';
+
+  @override
+  Future<WidgetsLocalizations> load(Locale locale) {
+    return SynchronousFuture<WidgetsLocalizations>(const DefaultWidgetsLocalizations());
+  }
+
+  @override
+  bool shouldReload(_TestRwandaWidgetsLocalizationsDelegate old) => false;
+}
+
+class _TestRwandaCupertinoLocalizationsDelegate extends LocalizationsDelegate<CupertinoLocalizations> {
+  const _TestRwandaCupertinoLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => locale.languageCode == 'rw';
+
+  @override
+  Future<CupertinoLocalizations> load(Locale locale) {
+    return SynchronousFuture<CupertinoLocalizations>(const DefaultCupertinoLocalizations());
+  }
+
+  @override
+  bool shouldReload(_TestRwandaCupertinoLocalizationsDelegate old) => false;
+}
+

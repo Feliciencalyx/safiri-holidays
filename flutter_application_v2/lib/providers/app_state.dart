@@ -1,8 +1,9 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/localization/app_translations.dart';
 import '../core/services/currency_api_service.dart';
+import '../core/data/worldwide_currencies.dart';
 import '../core/utils/passport_verifier.dart';
 
 class FlightDetails {
@@ -308,6 +309,7 @@ class RegisteredUserItem {
   final String name;
   final String email;
   final String phone;
+  final String address;
   final String passportNumber;
   final bool isPassportVerified;
   final String passportCountry;
@@ -321,6 +323,7 @@ class RegisteredUserItem {
     required this.name,
     required this.email,
     this.phone = '+250788000999',
+    this.address = 'Kigali, Rwanda',
     this.passportNumber = 'PC9920148X',
     this.isPassportVerified = true,
     this.passportCountry = 'Rwanda',
@@ -361,6 +364,10 @@ class AppState extends ChangeNotifier {
   String get currentUserPhone => _currentUserPhone;
   String get userPhone => _currentUserPhone;
 
+  String _currentUserAddress = 'Kigali, Rwanda';
+  String get currentUserAddress => _currentUserAddress;
+  String get userAddress => _currentUserAddress;
+
   String _currentUserPassportNumber = 'PC9920148X';
   String get currentUserPassportNumber => _currentUserPassportNumber;
   String get userPassportNumber => _currentUserPassportNumber;
@@ -388,6 +395,36 @@ class AppState extends ChangeNotifier {
   String _passportCountry = 'Rwanda';
   String get passportCountry => _passportCountry;
 
+  String? _scannedPassportPath;
+  String? get scannedPassportPath => _scannedPassportPath;
+
+  String _passportExpiryDate = '14 Nov 2031';
+  String get passportExpiryDate => _passportExpiryDate;
+
+  void updateScannedPassport({
+    String? imagePath,
+    String? passportNumber,
+    String? country,
+    String? expiryDate,
+    bool isVerified = true,
+  }) {
+    if (imagePath != null && imagePath.isNotEmpty) {
+      _scannedPassportPath = imagePath;
+    }
+    if (passportNumber != null && passportNumber.isNotEmpty) {
+      _currentUserPassportNumber = passportNumber;
+    }
+    if (country != null && country.isNotEmpty) {
+      _passportCountry = country;
+    }
+    if (expiryDate != null && expiryDate.isNotEmpty) {
+      _passportExpiryDate = expiryDate;
+    }
+    _isPassportVerified = isVerified;
+    notifyListeners();
+    _savePreferences();
+  }
+
   bool get isCredentialVerified =>
       _currentUserName.trim().isNotEmpty &&
       _currentUserEmail.trim().isNotEmpty &&
@@ -401,6 +438,7 @@ class AppState extends ChangeNotifier {
     required String email,
     required String role,
     String? phone,
+    String? address,
     String? passportNumber,
     bool? isPassportVerified,
     String? passportCountry,
@@ -420,6 +458,12 @@ class AppState extends ChangeNotifier {
       _currentUserPhone = _registeredUsers[existingIndex].phone;
     } else {
       _currentUserPhone = '';
+    }
+
+    if (address != null && address.isNotEmpty) {
+      _currentUserAddress = address;
+    } else if (existingIndex != -1 && _registeredUsers[existingIndex].address.isNotEmpty) {
+      _currentUserAddress = _registeredUsers[existingIndex].address;
     }
 
     if (passportNumber != null && passportNumber.isNotEmpty) {
@@ -447,6 +491,7 @@ class AppState extends ChangeNotifier {
         name: name,
         email: email,
         phone: _currentUserPhone,
+        address: _currentUserAddress,
         passportNumber: _currentUserPassportNumber,
         isPassportVerified: _isPassportVerified,
         passportCountry: _passportCountry,
@@ -463,6 +508,7 @@ class AppState extends ChangeNotifier {
           name: name,
           email: email,
           phone: _currentUserPhone,
+          address: _currentUserAddress,
           passportNumber: _currentUserPassportNumber,
           isPassportVerified: _isPassportVerified,
           passportCountry: _passportCountry,
@@ -480,6 +526,7 @@ class AppState extends ChangeNotifier {
     String? name,
     String? email,
     String? phone,
+    String? address,
     String? passportNumber,
     bool? isPassportVerified,
     String? passportCountry,
@@ -487,6 +534,7 @@ class AppState extends ChangeNotifier {
     if (name != null && name.isNotEmpty) _currentUserName = name;
     if (email != null && email.isNotEmpty) _currentUserEmail = email;
     if (phone != null && phone.isNotEmpty) _currentUserPhone = phone;
+    if (address != null && address.isNotEmpty) _currentUserAddress = address;
     if (passportNumber != null && passportNumber.isNotEmpty) {
       _currentUserPassportNumber = passportNumber;
       final verification = PassportVerifierService.verify(passportNumber);
@@ -495,6 +543,25 @@ class AppState extends ChangeNotifier {
     }
     if (isPassportVerified != null) _isPassportVerified = isPassportVerified;
     if (passportCountry != null) _passportCountry = passportCountry;
+
+    final userIdx = _registeredUsers.indexWhere((u) => u.email.toLowerCase() == _currentUserEmail.toLowerCase());
+    if (userIdx != -1) {
+      final existing = _registeredUsers[userIdx];
+      _registeredUsers[userIdx] = RegisteredUserItem(
+        id: existing.id,
+        name: _currentUserName,
+        email: _currentUserEmail,
+        phone: _currentUserPhone,
+        address: _currentUserAddress,
+        passportNumber: _currentUserPassportNumber,
+        isPassportVerified: _isPassportVerified,
+        passportCountry: _passportCountry,
+        tier: existing.tier,
+        memberSince: existing.memberSince,
+        totalBookings: existing.totalBookings,
+        status: existing.status,
+      );
+    }
     notifyListeners();
     _savePreferences();
   }
@@ -612,6 +679,7 @@ class AppState extends ChangeNotifier {
     'KES': 130.0,
     'ZAR': 18.5,
   };
+  Map<String, double> get liveExchangeRates => _liveExchangeRates;
 
   AppState() {
     refreshLiveExchangeRates();
@@ -626,7 +694,7 @@ class AppState extends ChangeNotifier {
         _themeMode = theme == 'dark' ? ThemeMode.dark : ThemeMode.light;
       }
       final currency = prefs.getString('safiri_currency');
-      if (currency != null && currencyData.containsKey(currency)) {
+      if (currency != null && (currencyData.containsKey(currency) || WorldwideCurrencies.search(currency).isNotEmpty)) {
         _currentCurrency = currency;
       }
       final locale = prefs.getString('safiri_locale');
@@ -646,6 +714,31 @@ class AppState extends ChangeNotifier {
         _userRole = prefs.getString('safiri_user_role') ?? _userRole;
         _isAdmin = _userRole == 'admin';
         _currentUserAvatarUrl = prefs.getString('safiri_user_avatar') ?? _currentUserAvatarUrl;
+      }
+      final savedAddress = prefs.getString('safiri_user_address');
+      if (savedAddress != null && savedAddress.isNotEmpty) {
+        _currentUserAddress = savedAddress;
+      }
+      final savedName = prefs.getString('safiri_user_name');
+      if (savedName != null && savedName.isNotEmpty) {
+        _currentUserName = savedName;
+      }
+      final savedEmail = prefs.getString('safiri_user_email');
+      if (savedEmail != null && savedEmail.isNotEmpty) {
+        _currentUserEmail = savedEmail;
+      }
+      final savedPhone = prefs.getString('safiri_user_phone');
+      if (savedPhone != null && savedPhone.isNotEmpty) {
+        _currentUserPhone = savedPhone;
+      }
+      final savedPassport = prefs.getString('safiri_user_passport');
+      if (savedPassport != null && savedPassport.isNotEmpty) {
+        _currentUserPassportNumber = savedPassport;
+      }
+      _scannedPassportPath = prefs.getString('safiri_scanned_passport_path');
+      final savedExpiry = prefs.getString('safiri_passport_expiry');
+      if (savedExpiry != null && savedExpiry.isNotEmpty) {
+        _passportExpiryDate = savedExpiry;
       }
       final savedBookings = prefs.getString('safiri_saved_bookings');
       if (savedBookings != null && savedBookings.isNotEmpty) {
@@ -683,6 +776,17 @@ class AppState extends ChangeNotifier {
       } else {
         await prefs.remove('safiri_auth_token');
       }
+      await prefs.setString('safiri_user_name', _currentUserName);
+      await prefs.setString('safiri_user_email', _currentUserEmail);
+      await prefs.setString('safiri_user_phone', _currentUserPhone);
+      await prefs.setString('safiri_user_address', _currentUserAddress);
+      await prefs.setString('safiri_user_passport', _currentUserPassportNumber);
+      await prefs.setString('safiri_user_country', _passportCountry);
+      await prefs.setBool('safiri_user_verified', _isPassportVerified);
+      if (_scannedPassportPath != null && _scannedPassportPath!.isNotEmpty) {
+        await prefs.setString('safiri_scanned_passport_path', _scannedPassportPath!);
+      }
+      await prefs.setString('safiri_passport_expiry', _passportExpiryDate);
       final encodedBookings = jsonEncode(_bookings.map((b) => b.toJson()).toList());
       await prefs.setString('safiri_saved_bookings', encodedBookings);
     } catch (e) {
@@ -712,24 +816,41 @@ class AppState extends ChangeNotifier {
   };
 
   void setCurrency(String currencyCode) {
-    if (currencyData.containsKey(currencyCode)) {
-      _currentCurrency = currencyCode;
-      notifyListeners();
-      _savePreferences();
-    }
+    _currentCurrency = currencyCode.toUpperCase();
+    notifyListeners();
+    _savePreferences();
+  }
+
+  double convertCurrency(double amount, String fromCode, String toCode) {
+    final fromUpper = fromCode.trim().toUpperCase();
+    final toUpper = toCode.trim().toUpperCase();
+    if (fromUpper == toUpper) return amount;
+
+    final rateFrom = _liveExchangeRates[fromUpper] ??
+        WorldwideCurrencies.findByCode(fromUpper).defaultRateToUsd;
+    final rateTo = _liveExchangeRates[toUpper] ??
+        WorldwideCurrencies.findByCode(toUpper).defaultRateToUsd;
+
+    if (rateFrom <= 0) return amount;
+    final amountInUsd = amount / rateFrom;
+    return amountInUsd * rateTo;
   }
 
   String formatPrice(double amountUsd) {
-    final data = currencyData[_currentCurrency] ?? currencyData['USD']!;
-    final symbol = data['symbol'] as String;
-    final rate = _liveExchangeRates[_currentCurrency] ?? (data['rate'] as double);
+    final currencyDef = WorldwideCurrencies.findByCode(_currentCurrency);
+    final symbol = currencyDef.symbol;
+    final rate = _liveExchangeRates[_currentCurrency] ?? currencyDef.defaultRateToUsd;
     final converted = amountUsd * rate;
 
-    if (_currentCurrency == 'RWF' || _currentCurrency == 'KES' || _currentCurrency == 'JPY') {
-      final formattedNum = converted.round().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
-      return '$symbol$formattedNum';
+    if (rate >= 100) {
+      final formattedNum = converted.round().toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]},',
+      );
+      return symbol.endsWith(' ') ? '$symbol$formattedNum' : '$symbol $formattedNum';
     } else {
-      return '$symbol${converted.toStringAsFixed(2)}';
+      final isSpaceNeeded = !symbol.contains('\$') && !symbol.contains('€') && !symbol.contains('£') && !symbol.contains('¥');
+      return isSpaceNeeded ? '$symbol ${converted.toStringAsFixed(2)}' : '$symbol${converted.toStringAsFixed(2)}';
     }
   }
 

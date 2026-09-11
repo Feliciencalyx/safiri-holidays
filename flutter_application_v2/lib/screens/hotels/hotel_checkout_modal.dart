@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import '../../core/services/payment_service.dart';
 import '../../providers/app_state.dart';
@@ -29,20 +29,22 @@ class HotelCheckoutModal extends StatefulWidget {
 class _HotelCheckoutModalState extends State<HotelCheckoutModal> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  final _emailController = TextEditingController(text: 'violet.nabise@safiri.com');
-  final _phoneController = TextEditingController(text: '+250788000123');
-  final _specialRequestsController = TextEditingController(text: 'High floor, quiet room away from elevator');
+  late TextEditingController _emailController;
+  late TextEditingController _phoneController;
+  late TextEditingController _specialRequestsController;
 
   String _selectedRoomCategory = 'Deluxe Suite with Breakfast';
   PaymentMethod _selectedPaymentMethod = PaymentMethod.momo;
   bool _isProcessing = false;
-  final PaymentService _paymentService = PaymentService();
 
   @override
   void initState() {
     super.initState();
     final appState = Provider.of<AppState>(context, listen: false);
     _nameController = TextEditingController(text: appState.currentUserName);
+    _emailController = TextEditingController(text: appState.currentUserEmail);
+    _phoneController = TextEditingController(text: appState.currentUserPhone);
+    _specialRequestsController = TextEditingController(text: 'High floor, quiet room away from elevator');
   }
 
   @override
@@ -53,8 +55,6 @@ class _HotelCheckoutModalState extends State<HotelCheckoutModal> {
     _specialRequestsController.dispose();
     super.dispose();
   }
-
-  int get _totalFareRwf => (widget.totalPriceUsd * 1350).round();
 
   @override
   Widget build(BuildContext context) {
@@ -144,8 +144,8 @@ class _HotelCheckoutModalState extends State<HotelCheckoutModal> {
                     ),
                     const SizedBox(height: 18),
 
-                    // Step 5: Select Payment Method
-                    const Text('3. SELECT PAYMENT METHOD (INSTANT RESERVATION)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    // Step 3: Preferred Payment Method
+                    const Text('3. PREFERRED PAYMENT METHOD (UPON CONFIRMATION)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
                     const SizedBox(height: 8),
                     _buildPaymentTile('MTN Mobile Money', 'USSD Push prompt on phone', PaymentMethod.momo, Icons.phone_android_rounded, isDark),
                     _buildPaymentTile('Airtel Money', 'Airtel Pay push prompt', PaymentMethod.airtel, Icons.phone_android_rounded, isDark),
@@ -156,37 +156,24 @@ class _HotelCheckoutModalState extends State<HotelCheckoutModal> {
             ),
             const SizedBox(height: 12),
 
-            // Dual CTA Buttons: Instant Pay vs Concierge Enquiry
-            Row(
-              children: [
-                // Button 1: Send Enquiry
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _isProcessing ? null : _sendHotelEnquiry,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: const BorderSide(color: Color(0xFF052469), width: 1.5),
-                    ),
-                    child: const Text('SEND ENQUIRY', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  ),
+            // Single Primary CTA Button: Send Hotel Enquiry
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: _isProcessing ? null : _sendHotelEnquiry,
+                icon: const Icon(Icons.send_rounded, size: 18, color: Colors.white),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF052469),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                const SizedBox(width: 12),
-
-                // Button 2: Pay & Book Now
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: _isProcessing ? null : _processInstantBooking,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF052469),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: _isProcessing
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text('PAY ${appState.formatPrice(widget.totalPriceUsd)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
+                label: _isProcessing
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : Text(
+                        'SEND HOTEL ENQUIRY (${appState.formatPrice(widget.totalPriceUsd)})',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+              ),
             ),
           ],
         ),
@@ -264,93 +251,47 @@ class _HotelCheckoutModalState extends State<HotelCheckoutModal> {
     );
   }
 
-  Future<void> _processInstantBooking() async {
+  Future<void> _sendHotelEnquiry() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isProcessing = true);
 
-    final appState = Provider.of<AppState>(context, listen: false);
-    final bookingId = '#HTL-2026-${1000 + appState.bookings.length}';
-
     try {
-      await _paymentService.createPayment(
-        bookingId: bookingId,
-        customerName: _nameController.text,
-        email: _emailController.text,
-        phone: _phoneController.text,
-        amount: _totalFareRwf,
-        paymentMethod: _selectedPaymentMethod.toApiValue(),
-      );
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
 
-      final newPass = BookingItem(
-        id: bookingId,
-        title: '${widget.hotel.name} (${widget.rooms} Rooms)',
-        userName: _nameController.text,
-        userTier: 'Premium Explorer',
-        status: 'Active',
-        type: 'Hotel',
-        dateRange: '${widget.checkIn.month}/${widget.checkIn.day} - ${widget.checkOut.month}/${widget.checkOut.day}, 2026',
+      final appState = Provider.of<AppState>(context, listen: false);
+      final enquiryId = '#ENQ-${8000 + appState.hotelEnquiries.length}';
+
+      final enquiry = HotelEnquiryItem(
+        id: enquiryId,
+        destination: widget.hotel.destination,
+        checkIn: '${widget.checkIn.year}-${widget.checkIn.month}-${widget.checkIn.day}',
+        checkOut: '${widget.checkOut.year}-${widget.checkOut.month}-${widget.checkOut.day}',
+        rooms: widget.rooms,
+        adults: widget.adults,
+        children: 0,
+        infants: 0,
+        status: 'Concierge Assigned',
+        submittedTime: 'Just now',
+        hotelName: widget.hotel.name,
+        roomType: _selectedRoomCategory,
         priceUsd: widget.totalPriceUsd,
-        qrCodeData: '$bookingId-${widget.hotel.id}-VERIFIED',
       );
 
-      appState.addBooking(newPass);
+      appState.addHotelEnquiry(enquiry);
 
-      if (mounted) {
-        Navigator.pop(context); // close modal
-        Navigator.pop(context); // close list screen
-        appState.setSelectedTab(1); // switch to bookings tab
+      Navigator.pop(context); // close modal
+      Navigator.pop(context); // close list
+      appState.setSelectedTab(1); // switch to bookings
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Hotel Reservation Confirmed ($bookingId)! Saved to Bookings.'),
-            backgroundColor: const Color(0xFF2E7D32),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Booking Error: ${e.toString()}'), backgroundColor: Colors.red),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Enquiry Dispatched ($enquiryId)! Concierge assigned within 24h.'),
+          backgroundColor: const Color(0xFF052469),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
-  }
-
-  void _sendHotelEnquiry() {
-    if (!_formKey.currentState!.validate()) return;
-
-    final appState = Provider.of<AppState>(context, listen: false);
-    final enquiryId = '#ENQ-${8000 + appState.hotelEnquiries.length}';
-
-    final enquiry = HotelEnquiryItem(
-      id: enquiryId,
-      destination: widget.hotel.destination,
-      checkIn: '${widget.checkIn.year}-${widget.checkIn.month}-${widget.checkIn.day}',
-      checkOut: '${widget.checkOut.year}-${widget.checkOut.month}-${widget.checkOut.day}',
-      rooms: widget.rooms,
-      adults: widget.adults,
-      children: 0,
-      infants: 0,
-      status: 'Concierge Assigned',
-      submittedTime: 'Just now',
-      hotelName: widget.hotel.name,
-      roomType: _selectedRoomCategory,
-      priceUsd: widget.totalPriceUsd,
-    );
-
-    appState.addHotelEnquiry(enquiry);
-
-    Navigator.pop(context); // close modal
-    Navigator.pop(context); // close list
-    appState.setSelectedTab(1); // switch to bookings
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Enquiry Dispatched ($enquiryId)! Concierge assigned within 24h.'),
-        backgroundColor: const Color(0xFF052469),
-      ),
-    );
   }
 }

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -36,6 +36,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passportController = TextEditingController();
+  final _addressController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
@@ -60,6 +61,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _addressController.dispose();
     _passportController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -431,11 +433,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final passportInput = _passportController.text.trim();
       final passportRes = PassportVerifierService.verify(passportInput, selectedNationality: _selectedCountry.name);
 
+      final addressInput = _addressController.text.trim().isNotEmpty
+          ? _addressController.text.trim()
+          : _selectedCountry.name;
+
       final res = await AuthService.register(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
         phone: fullPhone,
+        address: addressInput,
         passportNumber: passportInput,
       );
 
@@ -446,6 +453,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           email: res.user!.email,
           role: res.user!.role,
           phone: fullPhone,
+          address: addressInput,
           passportNumber: passportInput,
           isPassportVerified: passportRes.isValid,
           passportCountry: passportRes.countryName,
@@ -744,6 +752,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                             validator: _validatePhone,
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Residential / City Address Field
+                          TextFormField(
+                            controller: _addressController,
+                            textCapitalization: TextCapitalization.words,
+                            decoration: const InputDecoration(
+                              labelText: 'Residential / City Address',
+                              hintText: 'e.g. Kigali, Rwanda',
+                              prefixIcon: Icon(Icons.location_on_outlined),
+                            ),
                           ),
                           const SizedBox(height: 14),
 

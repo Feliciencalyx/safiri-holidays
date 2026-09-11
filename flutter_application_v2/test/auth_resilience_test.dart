@@ -17,6 +17,7 @@ void main() {
         email: 'mubark@gmail.com',
         password: 'Password123',
         phone: '+2500780156224',
+        address: 'KG 549 St, Kigali, Rwanda',
         passportNumber: 'A12345678',
       );
 
@@ -25,11 +26,12 @@ void main() {
       expect(res.user!.name, equals('Mubark Explorer'));
       expect(res.user!.email, equals('mubark@gmail.com'));
       expect(res.user!.phone, equals('+2500780156224'));
+      expect(res.user!.address, equals('KG 549 St, Kigali, Rwanda'));
       expect(res.user!.passportNumber, equals('A12345678'));
       expect(res.user!.isPassportVerified, isTrue);
     });
 
-    test('AppState saves registered user and allows lookup in registeredUsers', () {
+    test('AppState saves registered user and allows lookup in registeredUsers with synchronized address', () {
       final appState = AppState();
 
       appState.setAuthData(
@@ -38,6 +40,7 @@ void main() {
         email: 'mubark.test@gmail.com',
         role: 'customer',
         phone: '+250780156224',
+        address: 'KG 549 St, Kigali, Rwanda',
         passportNumber: 'PC9920148X',
         isPassportVerified: true,
         passportCountry: 'Rwanda',
@@ -46,6 +49,8 @@ void main() {
       expect(appState.isAuthenticated, isTrue);
       expect(appState.currentUserName, equals('Mubark Test'));
       expect(appState.currentUserEmail, equals('mubark.test@gmail.com'));
+      expect(appState.currentUserPhone, equals('+250780156224'));
+      expect(appState.currentUserAddress, equals('KG 549 St, Kigali, Rwanda'));
       expect(appState.currentUserPassportNumber, equals('PC9920148X'));
       expect(appState.isPassportVerified, isTrue);
 
@@ -55,7 +60,25 @@ void main() {
 
       expect(foundUser.name, equals('Mubark Test'));
       expect(foundUser.phone, equals('+250780156224'));
+      expect(foundUser.address, equals('KG 549 St, Kigali, Rwanda'));
       expect(foundUser.passportNumber, equals('PC9920148X'));
+
+      // Test profile update keeps address synced across the entire system
+      appState.updateUserProfile(
+        name: 'Mubark Updated',
+        email: 'mubark.test@gmail.com',
+        phone: '+250780999999',
+        address: 'Nyarutarama, Kigali, Rwanda',
+        passportNumber: 'PC9920148X',
+        isPassportVerified: true,
+      );
+
+      expect(appState.currentUserAddress, equals('Nyarutarama, Kigali, Rwanda'));
+      final updatedUser = appState.registeredUsers.firstWhere(
+        (u) => u.email.toLowerCase() == 'mubark.test@gmail.com',
+      );
+      expect(updatedUser.address, equals('Nyarutarama, Kigali, Rwanda'));
+      expect(updatedUser.phone, equals('+250780999999'));
     });
   });
 }

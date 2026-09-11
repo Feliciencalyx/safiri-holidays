@@ -1,5 +1,5 @@
 import 'dart:ui';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Premium Apple iOS-Style Frosted Glass Card Container
 class IosGlassCard extends StatelessWidget {

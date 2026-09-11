@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/visa_tracker_widget.dart';
 import '../visa/visa_vault_screen.dart';
 import 'facility_finder_screen.dart';
+import 'passport_vault_modal.dart';
 
 class DocumentsScreen extends StatelessWidget {
   const DocumentsScreen({super.key});
@@ -28,7 +29,7 @@ class DocumentsScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Documents & Vault',
+                    appState.tr('documents_vault'),
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontSize: 24,
@@ -44,7 +45,7 @@ class DocumentsScreen extends StatelessWidget {
                       );
                     },
                     icon: const Icon(Icons.location_city_rounded),
-                    tooltip: 'Find a Facility',
+                    tooltip: appState.tr('find_facility'),
                   ),
                 ],
               ),
@@ -80,14 +81,14 @@ class DocumentsScreen extends StatelessWidget {
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text(
-                              'Find a Facility Directory',
-                              style: TextStyle(fontFamily: 'Montserrat', fontSize: 16, fontWeight: FontWeight.bold),
+                              appState.tr('find_facility'),
+                              style: const TextStyle(fontFamily: 'Montserrat', fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                             Text(
-                              'Locate global visa hubs, airport luxury lounges, and partner hotels.',
-                              style: TextStyle(fontSize: 11, color: Colors.grey),
+                              appState.tr('find_facility_desc'),
+                              style: const TextStyle(fontSize: 11, color: Colors.grey),
                             ),
                           ],
                         ),
@@ -101,7 +102,7 @@ class DocumentsScreen extends StatelessWidget {
 
               // Active Visa Applications Section
               Text(
-                'Active Visa Applications',
+                appState.tr('active_visa_apps'),
                 style: TextStyle(
                   fontFamily: 'Montserrat',
                   fontSize: 18,
@@ -112,7 +113,7 @@ class DocumentsScreen extends StatelessWidget {
               const SizedBox(height: 12),
 
               if (appState.visaApplications.isEmpty)
-                const Center(child: Text('No active visa applications.'))
+                Center(child: Text(appState.tr('no_active_visas')))
               else
                 ...appState.visaApplications.map((visaApp) {
                   return Padding(
@@ -133,7 +134,7 @@ class DocumentsScreen extends StatelessWidget {
 
               // Personal Saved Documents Section
               Text(
-                'Personal Travel Vault',
+                appState.tr('personal_vault'),
                 style: TextStyle(
                   fontFamily: 'Montserrat',
                   fontSize: 18,
@@ -143,21 +144,12 @@ class DocumentsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              _buildVaultDocumentItem(
+              _buildPassportVaultItem(
                 context: context,
-                title: 'International Passport Scan',
-                subtitle: 'Expires: 14 Nov 2031 • Verified',
-                icon: Icons.badge_outlined,
+                appState: appState,
                 cardBg: cardBg,
                 isDark: isDark,
-              ),
-              _buildVaultDocumentItem(
-                context: context,
-                title: 'COVID-19 & Yellow Fever Certs',
-                subtitle: 'Health Pass • Verified',
-                icon: Icons.health_and_safety_outlined,
-                cardBg: cardBg,
-                isDark: isDark,
+                primaryNavy: primaryNavy,
               ),
             ],
           ),
@@ -166,17 +158,17 @@ class DocumentsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildVaultDocumentItem({
+  Widget _buildPassportVaultItem({
     required BuildContext context,
-    required String title,
-    required String subtitle,
-    required IconData icon,
+    required AppState appState,
     required Color cardBg,
     required bool isDark,
+    required Color primaryNavy,
   }) {
+    final hasScan = appState.scannedPassportPath != null && appState.scannedPassportPath!.isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: MajesticHorizonTheme.radiusCard,
@@ -184,31 +176,61 @@ class DocumentsScreen extends StatelessWidget {
           color: isDark ? MajesticHorizonTheme.darkBorder : MajesticHorizonTheme.lightBorder,
         ),
       ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: const Color(0xFF052469).withValues(alpha: 0.1),
-            child: Icon(icon, color: const Color(0xFF052469)),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: MajesticHorizonTheme.radiusCard,
+        child: InkWell(
+          borderRadius: MajesticHorizonTheme.radiusCard,
+          onTap: () => PassportVaultModal.show(context),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                CircleAvatar(
+                  backgroundColor: const Color(0xFF052469).withValues(alpha: 0.1),
+                  child: const Icon(Icons.badge_outlined, color: Color(0xFF052469)),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            appState.tr('passport_scan'),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          if (hasScan) ...[
+                            const SizedBox(width: 6),
+                            const Icon(Icons.check_circle, color: Color(0xFF2E7D32), size: 14),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${appState.tr('expires')}: ${appState.passportExpiryDate} • ${appState.isPassportVerified ? appState.tr('verified') : appState.tr('pending_verification')}',
+                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+                // Scan / Camera Action Button
+                IconButton(
+                  icon: const Icon(Icons.document_scanner_outlined, color: Color(0xFF052469)),
+                  tooltip: appState.tr('scan_passport'),
+                  onPressed: () => PassportScannerSheet.show(context),
+                ),
+                // View Action Button
+                IconButton(
+                  icon: const Icon(Icons.remove_red_eye_outlined, color: Colors.grey),
+                  tooltip: appState.tr('view_encrypted_passport'),
+                  onPressed: () => PassportVaultModal.show(context),
+                ),
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.remove_red_eye_outlined, color: Colors.grey),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Opening encrypted view for $title')),
-              );
-            },
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import '../../core/services/duffel_api_service.dart';
 import '../../theme/app_theme.dart';
@@ -74,11 +74,11 @@ class _FlightSearchScreenState extends State<FlightSearchScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'flights.safiriholidays.com Web Search Engine',
+                            'Search & Book Flights',
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                           Text(
-                            'Search live airline fares using official safiriholidays.com web search protocol.',
+                            'Compare real-time airline fares with best price guarantee.',
                             style: TextStyle(fontSize: 11, color: Colors.grey),
                           ),
                         ],
