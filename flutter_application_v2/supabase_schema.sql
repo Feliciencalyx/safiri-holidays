@@ -297,31 +297,49 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Profiles RLS
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
 CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id OR public.is_admin());
+
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id OR public.is_admin());
 
 -- Traveler Profiles RLS
+DROP POLICY IF EXISTS "Users can view their own traveler profile" ON public.traveler_profiles;
 CREATE POLICY "Users can view their own traveler profile" ON public.traveler_profiles FOR SELECT USING (user_id = auth.uid() OR public.is_admin());
+
+DROP POLICY IF EXISTS "Users can insert their traveler profile" ON public.traveler_profiles;
 CREATE POLICY "Users can insert their traveler profile" ON public.traveler_profiles FOR INSERT WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can update their traveler profile" ON public.traveler_profiles;
 CREATE POLICY "Users can update their traveler profile" ON public.traveler_profiles FOR UPDATE USING (user_id = auth.uid() OR public.is_admin());
 
 -- Bookings RLS
+DROP POLICY IF EXISTS "Users can view their own bookings" ON public.bookings;
 CREATE POLICY "Users can view their own bookings" ON public.bookings FOR SELECT USING (user_id = auth.uid() OR public.is_admin());
+
+DROP POLICY IF EXISTS "Users can create bookings" ON public.bookings;
 CREATE POLICY "Users can create bookings" ON public.bookings FOR INSERT WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Admins can update bookings" ON public.bookings;
 CREATE POLICY "Admins can update bookings" ON public.bookings FOR UPDATE USING (public.is_admin());
 
 -- Flight Bookings RLS
+DROP POLICY IF EXISTS "Users can view their flight bookings" ON public.flight_bookings;
 CREATE POLICY "Users can view their flight bookings" ON public.flight_bookings FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.bookings b WHERE b.id = booking_id AND (b.user_id = auth.uid() OR public.is_admin()))
 );
 
 -- Payments RLS
+DROP POLICY IF EXISTS "Users can view their payments" ON public.payments;
 CREATE POLICY "Users can view their payments" ON public.payments FOR SELECT USING (
     EXISTS (SELECT 1 FROM public.bookings b WHERE b.id = booking_id AND (b.user_id = auth.uid() OR public.is_admin()))
 );
 
 -- Notifications RLS
+DROP POLICY IF EXISTS "Users can view their notifications" ON public.notifications;
 CREATE POLICY "Users can view their notifications" ON public.notifications FOR SELECT USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can update their notifications" ON public.notifications;
 CREATE POLICY "Users can update their notifications" ON public.notifications FOR UPDATE USING (user_id = auth.uid());
 
 -- ============================================================================
