@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -39,6 +39,12 @@ jobs:
 
       - name: Run Test Suite
         run: flutter test
+
+      - name: Install Android CMake 3.22.1
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "cmake;3.22.1"
+          echo "$ANDROID_HOME/cmake/3.22.1/bin" >> $GITHUB_PATH
 
       - name: Ensure Gradlew Executable
         run: chmod +x android/gradlew
