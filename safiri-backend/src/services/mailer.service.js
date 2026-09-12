@@ -7,18 +7,30 @@ function getTransporter() {
 
   const host = process.env.SMTP_HOST;
   const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+  // Strip any spaces from app password (e.g. 'eppf iwho alrp mjmq' -> 'eppfiwhoalrpmjmq')
+  const pass = process.env.SMTP_PASS ? process.env.SMTP_PASS.replace(/\s+/g, '') : null;
   const port = parseInt(process.env.SMTP_PORT || '587', 10);
 
   if (!host || !user || !pass) {
     return null;
   }
 
-  transporter = nodemailer.createTransport({
+  const isGmail = host.includes('gmail');
+
+  transporter = nodemailer.createTransport(isGmail ? {
+    service: 'gmail',
+    auth: { user, pass },
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 8000,
+  } : {
     host,
     port,
     secure: port === 465,
     auth: { user, pass },
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 8000,
     tls: {
       rejectUnauthorized: false,
     },
@@ -38,11 +50,6 @@ async function sendOtpEmail({ to, code, type, name }) {
   if (!mailTransporter) {
     console.warn('====================================================');
     console.warn('[MAILER NOTICE] SMTP credentials not configured!');
-    console.warn('  To send real emails to inboxes, set in .env / Railway:');
-    console.warn('  SMTP_HOST=smtp.gmail.com');
-    console.warn('  SMTP_PORT=587');
-    console.warn('  SMTP_USER=your_email@gmail.com');
-    console.warn('  SMTP_PASS=your_google_app_password');
     console.warn('  OTP Code for ' + to + ' is: ' + code);
     console.warn('====================================================');
     return {
@@ -139,7 +146,7 @@ async function sendOtpEmail({ to, code, type, name }) {
     return { delivered: true, messageId: info.messageId };
   } catch (err) {
     console.error('[EMAIL DISPATCH ERROR]', err.message);
-    return { delivered: false, error: err.message };
+    return { delivered: false, error: err.message, code };
   }
 }
 
