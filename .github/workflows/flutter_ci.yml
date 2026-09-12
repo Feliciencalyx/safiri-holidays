@@ -1,4 +1,4 @@
-﻿name: Flutter CI/CD & Automated Build
+name: Flutter CI/CD & Automated Build
 
 on:
   push:
@@ -28,8 +28,14 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
           cache: true
+
+      - name: Install Android CMake
+        run: |
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
+            "cmake;3.22.1" \
+            "ndk;27.0.12077973"
 
       - name: Check Flutter Doctor
         run: flutter doctor -v
@@ -39,12 +45,6 @@ jobs:
 
       - name: Run Test Suite
         run: flutter test
-
-      - name: Install Android CMake 3.22.1
-        run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "cmake;3.22.1"
-          echo "$ANDROID_HOME/cmake/3.22.1/bin" >> $GITHUB_PATH
 
       - name: Ensure Gradlew Executable
         run: chmod +x android/gradlew
