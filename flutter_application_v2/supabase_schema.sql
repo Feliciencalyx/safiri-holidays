@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS public.bookings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     booking_reference TEXT UNIQUE NOT NULL DEFAULT public.generate_booking_reference(),
     user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-    service_type TEXT NOT NULL CHECK (service_type IN ('Flight', 'Hotel', 'Safari', 'Tour', 'Car', 'Visa')),
+    service_type TEXT NOT NULL CHECK (service_type IN ('Flight', 'Hotel', 'Safari', 'Tour', 'Visa')),
     status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID', 'CONFIRMED', 'CANCELLED', 'DISPATCHED')),
     total_amount_usd NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
     total_amount_rwf NUMERIC(12, 0) NOT NULL DEFAULT 0,
@@ -207,18 +207,9 @@ CREATE TABLE IF NOT EXISTS public.hotel_bookings (
 );
 
 -- ============================================================================
--- 10. CAR BOOKINGS
+-- 10. CLEANUP DEPRECATED TABLES (CAR RENTALS REMOVED FROM APPLICATION)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS public.car_bookings (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    booking_id UUID NOT NULL REFERENCES public.bookings(id) ON DELETE CASCADE,
-    vehicle_type TEXT NOT NULL,
-    pickup_location TEXT NOT NULL,
-    dropoff_location TEXT NOT NULL,
-    pickup_time TIMESTAMPTZ NOT NULL,
-    return_time TIMESTAMPTZ NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+DROP TABLE IF EXISTS public.car_bookings CASCADE;
 
 -- ============================================================================
 -- 11. NOTIFICATIONS & SUPPORT MESSAGES
