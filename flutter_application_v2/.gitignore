@@ -50,6 +50,10 @@ app.*.map.json
 # Environment Secrets & Keystores (CRITICAL)
 .env
 *.env
+secrets.json
+*.secrets.json
+env.json
+*.local.json
 *.keystore
 *.jks
 *.p12

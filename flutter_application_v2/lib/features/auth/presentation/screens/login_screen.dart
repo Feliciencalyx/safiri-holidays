@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/safiri_logo.dart';
@@ -349,10 +351,9 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text.trim();
     final appState = Provider.of<AppState>(context, listen: false);
 
-    // Smart Admin Credential Auto-Detection (e.g. admin@safiri.rw, "safiri holidays ltd", or password "shezan")
-    final bool isAdminCredentials = (input.toLowerCase() == 'admin@safiri.rw' ||
-        input.toLowerCase() == 'safiri holidays ltd' ||
-        password.toLowerCase() == 'shezan');
+    // In production, administrative privileges are strictly determined by the server-verified role.
+    // In debug mode only (kDebugMode), offline administrative testing for admin@safiri.rw is allowed.
+    final bool isDebugAdmin = kDebugMode && (input.toLowerCase() == 'admin@safiri.rw');
 
     try {
       final response = await AuthService.login(
@@ -361,7 +362,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (response.success && response.user != null && response.token != null) {
-        final isUserAdmin = response.user!.role == 'admin' || isAdminCredentials;
+        final isUserAdmin = response.user!.role == 'admin' || isDebugAdmin;
 
         appState.setAuthData(
           token: response.token!,
@@ -398,12 +399,12 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } else {
         // Strict Authentication Enforcement: Check Local Registered Accounts & Offline Support
-        if (isAdminCredentials) {
+        if (isDebugAdmin) {
           appState.loginAsAdmin();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Welcome Admin! Back-Office Concierge Access Activated.'),
+                content: Text('Welcome Admin! Back-Office Concierge Access Activated (Debug Mode).'),
                 backgroundColor: Color(0xFF78592E),
               ),
             );
@@ -473,7 +474,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
-      if (isAdminCredentials) {
+      if (isDebugAdmin) {
         appState.loginAsAdmin();
         if (mounted) {
           Navigator.pushReplacement(
@@ -536,6 +537,34 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _performGoogleLogin() async {
+    setState(() => _isLoggingIn = true);
+    try {
+      final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+      GoogleSignInAccount? googleUser;
+      try {
+        googleUser = await googleSignIn.signIn();
+      } catch (e) {
+        if (kDebugMode) debugPrint('[GOOGLE LOGIN CANCEL/FAIL] $e');
+      }
+
+      setState(() => _isLoggingIn = false);
+
+      if (googleUser != null) {
+        _completeGoogleAuth(
+          googleUser.email,
+          googleUser.displayName ?? googleUser.email.split('@')[0],
+          googleAccount: googleUser,
+        );
+      } else {
+        _showGoogleFallbackLoginModal();
+      }
+    } catch (e) {
+      setState(() => _isLoggingIn = false);
+      _showGoogleFallbackLoginModal();
+    }
+  }
+
+  void _showGoogleFallbackLoginModal() {
     final appState = Provider.of<AppState>(context, listen: false);
     showModalBottomSheet(
       context: context,
@@ -605,7 +634,11 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Future<void> _completeGoogleAuth(String email, String name) async {
+  Future<void> _completeGoogleAuth(
+    String email,
+    String name, {
+    GoogleSignInAccount? googleAccount,
+  }) async {
     final appState = Provider.of<AppState>(context, listen: false);
 
     // Check if user already has registered phone and passport credentials
@@ -616,7 +649,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (existingUser.phone.isNotEmpty && existingUser.passportNumber.isNotEmpty) {
       appState.setAuthData(
-        token: 'mock_google_jwt_${DateTime.now().millisecondsSinceEpoch}',
+        token: 'jwt_google_${DateTime.now().millisecondsSinceEpoch}',
         name: existingUser.name.isNotEmpty ? existingUser.name : name,
         email: email,
         role: 'customer',
@@ -639,11 +672,15 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } else {
-      _showGoogleCredentialsModal(email, name);
+      _showGoogleCredentialsModal(email, name, googleAccount: googleAccount);
     }
   }
 
-  void _showGoogleCredentialsModal(String email, String name) {
+  void _showGoogleCredentialsModal(
+    String email,
+    String name, {
+    GoogleSignInAccount? googleAccount,
+  }) {
     final googlePhoneController = TextEditingController();
     final googlePassportController = TextEditingController();
     PassportVerificationResult? googlePassportResult;
@@ -657,10 +694,10 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       builder: (modalCtx) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
+          builder: (_, setModalState) {
             final appState = Provider.of<AppState>(context);
             return Padding(
-              padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+              padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(modalCtx).viewInsets.bottom + 24),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -774,33 +811,64 @@ class _LoginScreenState extends State<LoginScreen> {
                                   return;
                                 }
 
-                                setModalState(() => isSubmitting = true);
+                                final messenger = ScaffoldMessenger.of(context);
+                                final navigator = Navigator.of(context);
                                 final appState = Provider.of<AppState>(context, listen: false);
 
-                                appState.setAuthData(
-                                  token: 'mock_google_jwt_${DateTime.now().millisecondsSinceEpoch}',
-                                  name: name,
-                                  email: email,
-                                  role: 'customer',
+                                setModalState(() => isSubmitting = true);
+
+                                // Strict database check: Ensure phone number is not taken
+                                final phoneCheck = await AuthService.checkAvailability(phone: phoneInput);
+                                if (!phoneCheck.isAvailable) {
+                                  setModalState(() => isSubmitting = false);
+                                  if (mounted) {
+                                    messenger.showSnackBar(
+                                      SnackBar(content: Text(phoneCheck.message), backgroundColor: Colors.red),
+                                    );
+                                  }
+                                  return;
+                                }
+
+                                final googleRes = await AuthService.googleSignIn(
                                   phone: phoneInput,
                                   passportNumber: passportInput,
-                                  isPassportVerified: passportRes.isValid,
-                                  passportCountry: passportRes.countryName,
+                                  existingAccount: googleAccount,
                                 );
 
-                                Navigator.pop(modalCtx);
+                                if (googleRes.success) {
+                                  appState.setAuthData(
+                                    token: googleRes.token ?? 'jwt_google_${DateTime.now().millisecondsSinceEpoch}',
+                                    name: name,
+                                    email: email,
+                                    role: 'customer',
+                                    phone: phoneInput,
+                                    passportNumber: passportInput,
+                                    isPassportVerified: passportRes.isValid,
+                                    passportCountry: passportRes.countryName,
+                                  );
 
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Google Account Setup Complete for $name!'),
-                                    backgroundColor: const Color(0xFF2E7D32),
-                                  ),
-                                );
+                                  if (modalCtx.mounted) Navigator.pop(modalCtx);
 
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-                                );
+                                  if (mounted) {
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text('Google Account Setup Complete for $name!'),
+                                        backgroundColor: const Color(0xFF2E7D32),
+                                      ),
+                                    );
+
+                                    navigator.pushReplacement(
+                                      MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+                                    );
+                                  }
+                                } else {
+                                  setModalState(() => isSubmitting = false);
+                                  if (mounted) {
+                                    messenger.showSnackBar(
+                                      SnackBar(content: Text(googleRes.message), backgroundColor: Colors.red),
+                                    );
+                                  }
+                                }
                               },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1D3B8A),
@@ -829,21 +897,263 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  /// Full 2-Step Password Reset Wizard: OTP Verification via Email/Phone -> Set New Password
   void _showForgotPasswordDialog() {
-    final appState = Provider.of<AppState>(context, listen: false);
-    showDialog(
+    final identifierController = TextEditingController();
+    final otpController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+
+    bool isCodeSent = false;
+    bool isSubmitting = false;
+    bool obscureNew = true;
+    String? targetMasked;
+    String? debugCode;
+    String? modalError;
+
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(appState.tr('auth.password_reset')),
-        content: Text(appState.tr('auth.password_reset_desc')),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(appState.tr('auth.cancel'))),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(appState.tr('auth.send_link')),
-          ),
-        ],
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      builder: (modalCtx) {
+        return StatefulBuilder(
+          builder: (_, setModalState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(modalCtx).viewInsets.bottom + 24),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1D3B8A).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.lock_reset_rounded, color: Color(0xFF1D3B8A), size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Reset Password',
+                          style: TextStyle(fontFamily: 'Montserrat', fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      !isCodeSent
+                          ? 'Enter your registered Email, Username, or Phone Number. We will dispatch a 6-digit confirmation code.'
+                          : 'Enter the 6-digit code sent to $targetMasked and your new password.',
+                      style: const TextStyle(fontSize: 13, color: Colors.grey, height: 1.4),
+                    ),
+                    const Divider(height: 24),
+
+                    if (modalError != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        margin: const EdgeInsets.only(bottom: 14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFFCA5A5)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                modalError!,
+                                style: const TextStyle(color: Color(0xFFDC2626), fontSize: 12, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    if (!isCodeSent) ...[
+                      // Step 1: Identifier Input
+                      const Text('Account Email, Username, or Phone', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: identifierController,
+                        decoration: const InputDecoration(
+                          hintText: 'name@example.com or +250 788 000 123',
+                          prefixIcon: Icon(Icons.person_search_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: isSubmitting
+                              ? null
+                              : () async {
+                                  final input = identifierController.text.trim();
+                                  if (input.isEmpty) {
+                                    setModalState(() => modalError = 'Please enter your email, username, or phone number');
+                                    return;
+                                  }
+
+                                  setModalState(() {
+                                    isSubmitting = true;
+                                    modalError = null;
+                                  });
+
+                                  final otpRes = await AuthService.sendOtp(
+                                    identifier: input,
+                                    type: 'password_reset',
+                                  );
+
+                                  setModalState(() => isSubmitting = false);
+
+                                  if (otpRes.success) {
+                                    setModalState(() {
+                                      isCodeSent = true;
+                                      targetMasked = otpRes.targetMasked ?? input;
+                                      debugCode = otpRes.debugCode;
+                                      if (debugCode != null) {
+                                        otpController.text = debugCode!;
+                                      }
+                                    });
+                                  } else {
+                                    setModalState(() => modalError = otpRes.message);
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1D3B8A),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: isSubmitting
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Text('Send Confirmation Code', style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ] else ...[
+                      // Step 2: OTP Code + New Password
+                      const Text('6-Digit Confirmation Code', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: otpController,
+                        keyboardType: TextInputType.number,
+                        maxLength: 6,
+                        decoration: const InputDecoration(
+                          hintText: '123456',
+                          prefixIcon: Icon(Icons.pin_outlined),
+                          counterText: '',
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      const Text('New Password', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: newPasswordController,
+                        obscureText: obscureNew,
+                        decoration: InputDecoration(
+                          hintText: 'At least 8 characters',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(obscureNew ? Icons.visibility_off : Icons.visibility, size: 20),
+                            onPressed: () => setModalState(() => obscureNew = !obscureNew),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      const Text('Confirm New Password', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: confirmPasswordController,
+                        obscureText: obscureNew,
+                        decoration: const InputDecoration(
+                          hintText: 'Re-enter your new password',
+                          prefixIcon: Icon(Icons.lock_outline),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: isSubmitting
+                              ? null
+                              : () async {
+                                  final code = otpController.text.trim();
+                                  final newPass = newPasswordController.text.trim();
+                                  final confirmPass = confirmPasswordController.text.trim();
+
+                                  if (code.length != 6) {
+                                    setModalState(() => modalError = 'Please enter the 6-digit confirmation code');
+                                    return;
+                                  }
+                                  if (newPass.length < 8) {
+                                    setModalState(() => modalError = 'Password must be at least 8 characters long');
+                                    return;
+                                  }
+                                  if (newPass != confirmPass) {
+                                    setModalState(() => modalError = 'Passwords do not match');
+                                    return;
+                                  }
+
+                                  final messenger = ScaffoldMessenger.of(context);
+
+                                  setModalState(() {
+                                    isSubmitting = true;
+                                    modalError = null;
+                                  });
+
+                                  final resetRes = await AuthService.resetPassword(
+                                    identifier: identifierController.text.trim(),
+                                    code: code,
+                                    newPassword: newPass,
+                                  );
+
+                                  setModalState(() => isSubmitting = false);
+
+                                  if (resetRes.success) {
+                                    if (modalCtx.mounted) Navigator.pop(modalCtx);
+                                    if (mounted) {
+                                      messenger.showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Password updated successfully! Please sign in with your new password.'),
+                                          backgroundColor: Color(0xFF2E7D32),
+                                          duration: Duration(seconds: 4),
+                                        ),
+                                      );
+                                    }
+                                  } else {
+                                    setModalState(() => modalError = resetRes.message);
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1D3B8A),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: isSubmitting
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Text('Verify & Reset Password', style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

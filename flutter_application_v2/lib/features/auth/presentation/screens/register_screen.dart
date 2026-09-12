@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/safiri_logo.dart';
@@ -8,6 +10,7 @@ import '../../../../core/widgets/ios_glass_widgets.dart';
 import '../../../../core/utils/passport_verifier.dart';
 import '../../../../providers/app_state.dart';
 import '../../../../screens/main_navigation_screen.dart';
+import '../widgets/otp_verification_dialog.dart';
 
 class CountryCodeItem {
   final String name;
@@ -33,6 +36,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passportController = TextEditingController();
@@ -59,12 +63,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
     _passportController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  String? _validateUsername(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Please choose a username';
+    }
+    final trimmed = value.trim();
+    if (trimmed.length < 3 || trimmed.length > 20) {
+      return 'Username must be between 3 and 20 characters';
+    }
+    if (!RegExp(r'^[a-zA-Z0-9._]+$').hasMatch(trimmed)) {
+      return 'Username can only contain letters, numbers, and underscores';
+    }
+    return null;
   }
 
   // Strict Validation Rules
@@ -109,6 +128,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _handleGoogleSignUp() async {
+    setState(() => _isLoading = true);
+    try {
+      final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+      GoogleSignInAccount? googleUser;
+      try {
+        googleUser = await googleSignIn.signIn();
+      } catch (e) {
+        if (kDebugMode) debugPrint('[GOOGLE SIGN IN CANCEL/FAIL] $e');
+      }
+
+      setState(() => _isLoading = false);
+
+      if (googleUser != null) {
+        _completeGoogleRegistration(
+          googleUser.email,
+          googleUser.displayName ?? googleUser.email.split('@')[0],
+          googleAccount: googleUser,
+        );
+      } else {
+        _showGoogleFallbackModal();
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showGoogleFallbackModal();
+    }
+  }
+
+  void _showGoogleFallbackModal() {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -177,7 +224,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Future<void> _completeGoogleRegistration(String email, String name) async {
+  Future<void> _completeGoogleRegistration(
+    String email,
+    String name, {
+    GoogleSignInAccount? googleAccount,
+  }) async {
     final appState = Provider.of<AppState>(context, listen: false);
 
     // Check if user already has registered phone and passport credentials
@@ -188,7 +239,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (existingUser.phone.isNotEmpty && existingUser.passportNumber.isNotEmpty) {
       appState.setAuthData(
-        token: 'mock_google_jwt_${DateTime.now().millisecondsSinceEpoch}',
+        token: 'jwt_google_${DateTime.now().millisecondsSinceEpoch}',
         name: existingUser.name.isNotEmpty ? existingUser.name : name,
         email: email,
         role: 'customer',
@@ -211,11 +262,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
       }
     } else {
-      _showGoogleCredentialsModal(email, name);
+      _showGoogleCredentialsModal(email, name, googleAccount: googleAccount);
     }
   }
 
-  void _showGoogleCredentialsModal(String email, String name) {
+  void _showGoogleCredentialsModal(
+    String email,
+    String name, {
+    GoogleSignInAccount? googleAccount,
+  }) {
     final googlePhoneController = TextEditingController();
     final googlePassportController = TextEditingController();
     PassportVerificationResult? googlePassportResult;
@@ -230,9 +285,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       builder: (modalCtx) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
+          builder: (_, setModalState) {
             return Padding(
-              padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+              padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(modalCtx).viewInsets.bottom + 24),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -364,37 +419,68 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   return;
                                 }
 
-                                setModalState(() => isSubmitting = true);
-                                final appState = Provider.of<AppState>(context, listen: false);
-
                                 String cleanDigits = phoneInput.replaceAll(RegExp(r'\D'), '');
                                 if (cleanDigits.startsWith('0')) cleanDigits = cleanDigits.substring(1);
                                 final fullPhone = '${googleSelectedCountry.code}$cleanDigits';
 
-                                appState.setAuthData(
-                                  token: 'mock_google_jwt_${DateTime.now().millisecondsSinceEpoch}',
-                                  name: name,
-                                  email: email,
-                                  role: 'customer',
+                                final messenger = ScaffoldMessenger.of(context);
+                                final navigator = Navigator.of(context);
+                                final appState = Provider.of<AppState>(context, listen: false);
+
+                                setModalState(() => isSubmitting = true);
+
+                                // Strict database check: Ensure phone number is not taken
+                                final phoneAvailability = await AuthService.checkAvailability(phone: fullPhone);
+                                if (!phoneAvailability.isAvailable) {
+                                  setModalState(() => isSubmitting = false);
+                                  if (mounted) {
+                                    messenger.showSnackBar(
+                                      SnackBar(content: Text(phoneAvailability.message), backgroundColor: Colors.red),
+                                    );
+                                  }
+                                  return;
+                                }
+
+                                final googleRes = await AuthService.googleSignIn(
                                   phone: fullPhone,
                                   passportNumber: passportInput,
-                                  isPassportVerified: passportRes.isValid,
-                                  passportCountry: passportRes.countryName,
+                                  existingAccount: googleAccount,
                                 );
 
-                                Navigator.pop(modalCtx);
+                                if (googleRes.success) {
+                                  appState.setAuthData(
+                                    token: googleRes.token ?? 'jwt_google_${DateTime.now().millisecondsSinceEpoch}',
+                                    name: name,
+                                    email: email,
+                                    role: 'customer',
+                                    phone: fullPhone,
+                                    passportNumber: passportInput,
+                                    isPassportVerified: passportRes.isValid,
+                                    passportCountry: passportRes.countryName,
+                                  );
 
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Google Account Created & Verified for $name!'),
-                                    backgroundColor: const Color(0xFF2E7D32),
-                                  ),
-                                );
+                                  if (modalCtx.mounted) Navigator.pop(modalCtx);
 
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-                                );
+                                  if (mounted) {
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text('Google Account Created & Verified for $name!'),
+                                        backgroundColor: const Color(0xFF2E7D32),
+                                      ),
+                                    );
+
+                                    navigator.pushReplacement(
+                                      MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+                                    );
+                                  }
+                                } else {
+                                  setModalState(() => isSubmitting = false);
+                                  if (mounted) {
+                                    messenger.showSnackBar(
+                                      SnackBar(content: Text(googleRes.message), backgroundColor: Colors.red),
+                                    );
+                                  }
+                                }
                               },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1D3B8A),
@@ -428,66 +514,138 @@ class _RegisterScreenState extends State<RegisterScreen> {
       cleanDigits = cleanDigits.substring(1);
     }
     final fullPhone = '${_selectedCountry.code}$cleanDigits';
+    final emailInput = _emailController.text.trim();
+    final usernameInput = _usernameController.text.trim().toLowerCase();
+    final nameInput = _nameController.text.trim();
+    final passwordInput = _passwordController.text.trim();
+    final passportInput = _passportController.text.trim();
+    final addressInput = _addressController.text.trim().isNotEmpty
+        ? _addressController.text.trim()
+        : _selectedCountry.name;
 
     try {
-      final passportInput = _passportController.text.trim();
-      final passportRes = PassportVerifierService.verify(passportInput, selectedNationality: _selectedCountry.name);
-
-      final addressInput = _addressController.text.trim().isNotEmpty
-          ? _addressController.text.trim()
-          : _selectedCountry.name;
-
-      final res = await AuthService.register(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+      // 1. STRICT UNIQUENESS CHECK: Ensure Email, Username, and Phone do NOT already exist
+      final availability = await AuthService.checkAvailability(
+        email: emailInput,
+        username: usernameInput,
         phone: fullPhone,
-        address: addressInput,
-        passportNumber: passportInput,
       );
 
-      if (res.success && res.user != null) {
-        appState.setAuthData(
-          token: res.token ?? 'mock_jwt',
-          name: res.user!.name,
-          email: res.user!.email,
-          role: res.user!.role,
-          phone: fullPhone,
-          address: addressInput,
-          passportNumber: passportInput,
-          isPassportVerified: passportRes.isValid,
-          passportCountry: passportRes.countryName,
-        );
-
+      if (!availability.isAvailable) {
+        setState(() => _isLoading = false);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Account created successfully! Welcome, ${res.user!.name}.'),
-              backgroundColor: const Color(0xFF2E7D32),
+              content: Text(availability.message),
+              backgroundColor: AppColors.error,
+              duration: const Duration(seconds: 4),
             ),
           );
-
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-          );
         }
-      } else {
+        return;
+      }
+
+      // 2. DISPATCH 6-DIGIT EMAIL OTP CONFIRMATION CODE
+      final otpSendRes = await AuthService.sendOtp(
+        identifier: emailInput,
+        type: 'signup',
+        username: usernameInput,
+        phone: fullPhone,
+      );
+
+      setState(() => _isLoading = false);
+
+      if (!otpSendRes.success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(_getCleanUserErrorMessage(res.message)), backgroundColor: AppColors.error),
+            SnackBar(content: Text(otpSendRes.message), backgroundColor: AppColors.error),
           );
         }
+        return;
+      }
+
+      // 3. SHOW OTP CONFIRMATION DIALOG
+      if (!mounted) return;
+      final verified = await OtpVerificationDialog.show(
+        context,
+        title: 'Confirm Your Email',
+        subtitle: 'We sent a 6-digit confirmation code to:',
+        target: otpSendRes.targetMasked ?? emailInput,
+        debugCode: otpSendRes.debugCode,
+        onResend: () async {
+          final res = await AuthService.sendOtp(
+            identifier: emailInput,
+            type: 'signup',
+            username: usernameInput,
+            phone: fullPhone,
+          );
+          return res.success;
+        },
+        onVerify: (code) async {
+          // Verify code with backend
+          final verifyRes = await AuthService.verifyOtp(
+            identifier: emailInput,
+            code: code,
+            type: 'signup',
+          );
+
+          if (!verifyRes.success) {
+            return verifyRes.message;
+          }
+
+          // Complete Registration on backend
+          final regRes = await AuthService.register(
+            name: nameInput,
+            email: emailInput,
+            username: usernameInput,
+            password: passwordInput,
+            phone: fullPhone,
+            address: addressInput,
+            passportNumber: passportInput,
+            otp: code,
+          );
+
+          if (!regRes.success) {
+            return regRes.message;
+          }
+
+          // Save auth credentials to local state
+          final passportRes = PassportVerifierService.verify(passportInput, selectedNationality: _selectedCountry.name);
+          appState.setAuthData(
+            token: regRes.token ?? 'jwt_supabase_${DateTime.now().millisecondsSinceEpoch}',
+            name: regRes.user?.name ?? nameInput,
+            email: regRes.user?.email ?? emailInput,
+            role: regRes.user?.role ?? 'customer',
+            phone: fullPhone,
+            address: addressInput,
+            passportNumber: passportInput,
+            isPassportVerified: passportRes.isValid,
+            passportCountry: passportRes.countryName,
+          );
+
+          return null; // Null means success!
+        },
+      );
+
+      if (verified == true && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Account verified and created successfully! Welcome, $nameInput.'),
+            backgroundColor: const Color(0xFF2E7D32),
+          ),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+        );
       }
     } catch (e) {
+      setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(_getCleanUserErrorMessage(e.toString())), backgroundColor: AppColors.error),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
       }
     }
   }
@@ -709,6 +867,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               prefixIcon: const Icon(Icons.person_outline_rounded),
                             ),
                             validator: (v) => v == null || v.trim().isEmpty ? 'Please enter your full name' : null,
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Username Field with Strict Uniqueness Validation
+                          TextFormField(
+                            controller: _usernameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Username',
+                              hintText: 'johndoe',
+                              prefixIcon: Icon(Icons.alternate_email_rounded),
+                            ),
+                            validator: _validateUsername,
                           ),
                           const SizedBox(height: 14),
 

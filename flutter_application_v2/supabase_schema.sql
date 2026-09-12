@@ -16,6 +16,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT UNIQUE NOT NULL,
+    username TEXT UNIQUE,
     full_name TEXT NOT NULL,
     phone TEXT,
     role TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'admin', 'concierge')),
@@ -26,9 +27,27 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Index for fast user search
+-- Indices for fast user search and strict uniqueness enforcement
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_username_unique ON public.profiles(username) WHERE username IS NOT NULL AND username != '';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_phone_unique ON public.profiles(phone) WHERE phone IS NOT NULL AND phone != '';
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
+
+-- ============================================================================
+-- 1.1 VERIFICATION CODES (EMAIL & SMS OTP CONFIRMATIONS)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.verification_codes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    identifier TEXT NOT NULL,
+    code TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('signup', 'password_reset')),
+    expires_at TIMESTAMPTZ NOT NULL,
+    is_used BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_verification_identifier ON public.verification_codes(identifier);
+CREATE INDEX IF NOT EXISTS idx_verification_type ON public.verification_codes(type);
 
 -- ============================================================================
 -- 2. TRAVELER PROFILES (PASSPORT & ICAO VERIFICATION)
@@ -230,13 +249,20 @@ CREATE TABLE IF NOT EXISTS public.support_messages (
 CREATE OR REPLACE FUNCTION public.handle_new_user_signup()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.profiles (id, email, full_name, role)
+    INSERT INTO public.profiles (id, email, username, full_name, phone, role)
     VALUES (
         NEW.id,
         NEW.email,
+        COALESCE(NEW.raw_user_meta_data->>'username', SPLIT_PART(NEW.email, '@', 1)),
         COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', SPLIT_PART(NEW.email, '@', 1)),
+        NEW.raw_user_meta_data->>'phone',
         COALESCE(NEW.raw_user_meta_data->>'role', 'customer')
-    );
+    )
+    ON CONFLICT (id) DO UPDATE SET
+        email = EXCLUDED.email,
+        username = COALESCE(public.profiles.username, EXCLUDED.username),
+        full_name = COALESCE(EXCLUDED.full_name, public.profiles.full_name),
+        phone = COALESCE(EXCLUDED.phone, public.profiles.phone);
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
