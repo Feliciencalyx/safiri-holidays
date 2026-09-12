@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const { supabaseAdmin } = require('../config/supabase');
+const { sendOtpEmail } = require('../services/mailer.service');
 
 // Resilient in-memory OTP cache (supplements database table for instant fallback)
 const otpCache = new Map();
@@ -234,11 +235,25 @@ router.post('/send-otp', async (req, res) => {
     console.log('   Expires:    10 minutes');
     console.log('====================================================');
 
+    // Dispatch real email to user's inbox
+    let emailResult = { delivered: false };
+    if (targetEmail && targetEmail.includes('@')) {
+      emailResult = await sendOtpEmail({
+        to: targetEmail,
+        code: otpCode,
+        type: otpType,
+        name: username || 'Valued Traveler',
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      message: 'A 6-digit confirmation code has been sent to ' + maskIdentifier(targetEmail) + '.',
+      message: emailResult.delivered
+        ? 'A 6-digit confirmation code has been delivered to your email inbox (' + maskIdentifier(targetEmail) + ').'
+        : 'A 6-digit confirmation code has been sent to ' + maskIdentifier(targetEmail) + '.',
       targetMasked: maskIdentifier(targetEmail),
-      debugCode: process.env.NODE_ENV === 'production' ? undefined : otpCode,
+      emailDelivered: emailResult.delivered,
+      debugCode: (process.env.NODE_ENV === 'production' && emailResult.delivered) ? undefined : otpCode,
     });
   } catch (err) {
     console.error('[SEND OTP ERROR]', err);
